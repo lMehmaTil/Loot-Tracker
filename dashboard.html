@@ -424,6 +424,8 @@
       <div class="stat-sub" id="sub-bounty">Im gewahlten Zeitraum</div>
       <div class="bounty-last" id="bounty-last" style="display:none"></div>
       <div id="bounty-hint" class="stat-sub" style="display:none;color:var(--orange)">OCR inaktiv</div>
+      <div class="stat-sub2" style="margin-top:8px">&#x1F525; Streak &nbsp;&#xB7;&nbsp; &#x23F1; &#xD8; Zeit</div>
+      <div class="stat-value-sm bounty" id="dash-streak-summary">&#x2014;</div>
     </div>
     <div class="stat-card" id="stat-dungeon">
       <div class="stat-label">&#x1F3F0; Dungeon Abschlusse</div>
@@ -527,6 +529,20 @@
         <div class="stat-label">&#x1F4B8; Gesamtkosten</div>
         <div class="stat-value red" id="kp-cost">&#x2014;</div>
         <div class="stat-sub" id="kp-cost-sub">Yang ausgegeben</div>
+      </div>
+    </div>
+    <div class="stats-row" style="grid-template-columns:repeat(2,1fr)">
+      <div class="stat-card">
+        <div class="stat-label">&#x23F1; &#xD8; Durchschnittszeit</div>
+        <div class="stat-value bounty" id="kp-avg-time" style="font-size:1.6rem">&#x2014;</div>
+        <div class="stat-sub">pro Kopfgeld &middot; ohne Pausen</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">&#x1F525; Streak</div>
+        <div class="stat-value bounty" id="kp-streak-cur" style="font-size:1.6rem">&#x2014;</div>
+        <div class="stat-sub">Kopfgelder am Stueck</div>
+        <div class="stat-sub2">&#x2B50; Rekord (gesamt)</div>
+        <div class="stat-value-sm bounty" id="kp-streak-best">&#x2014;</div>
       </div>
     </div>
     <div class="two-col">
@@ -685,6 +701,13 @@ function fmtDuration(m) {
   if (m<60) return m+' Min';
   const h=Math.floor(m/60), r=m%60; return r?`${h}h ${r}Min`:`${h}h`;
 }
+function fmtMinSec(minutes) {
+  if (minutes===null||minutes===undefined||isNaN(minutes)) return '—';
+  const m=Math.floor(minutes), s=Math.round((minutes-m)*60);
+  if (m===0) return s+'s';
+  if (s===0) return m+'m';
+  return m+'m '+s+'s';
+}
 function fmtRelTime(iso) {
   if (!iso) return '—';
   const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);
@@ -755,6 +778,8 @@ function updateDashboard(data, kopf, dung) {
   document.getElementById('val-bounty').textContent  = kopf.total>0 ? kopf.total+'x' : '—';
   document.getElementById('sub-bounty').textContent  = kopf.total===1?'Kopfgeld abgeschlossen':'Kopfgelder abgeschlossen';
   document.getElementById('bounty-hint').style.display = kopf.watcher_active?'none':'';
+  const dsCur=kopf.current_streak||0, dsAvg=kopf.avg_time_min;
+  document.getElementById('dash-streak-summary').textContent=(dsCur>0||dsAvg)?((dsCur>0?dsCur+'×':'-')+' · '+(dsAvg?fmtMinSec(dsAvg):'—')):'—';
   if (kopf.last_timestamp_any) {
     lastKopfgeldTs=kopf.last_timestamp_any;
     document.getElementById('bounty-last').style.display='';
@@ -808,6 +833,11 @@ function updateKopfgelderPage(kopf) {
   document.getElementById('kp-cost-sub').textContent = kopf.total>0?kopf.total+' × '+fmtNumber(kopf.kopfgeld_cost)+' ¥':'Yang ausgegeben';
   document.getElementById('kopf-watcher-badge').textContent = kopf.watcher_active?'🟢 OCR aktiv':'🔴 OCR inaktiv';
   document.getElementById('kopf-watcher-badge').style.color = kopf.watcher_active?'var(--green)':'var(--red)';
+  // Streak & Durchschnittszeit
+  const cur=kopf.current_streak||0, best=kopf.best_streak||0;
+  document.getElementById('kp-streak-cur').textContent  = cur>0?cur+'×':'—';
+  document.getElementById('kp-streak-best').textContent = best>0?best+'×':'—';
+  document.getElementById('kp-avg-time').textContent    = fmtMinSec(kopf.avg_time_min);
   updateKopfDetailChart(kopf);
   const list=document.getElementById('kopf-entries-list');
   if (!kopf.total) { list.innerHTML='<div class="empty-state"><div class="empty-icon">🎯</div><div>Keine Eintraege im Zeitraum</div></div>'; return; }

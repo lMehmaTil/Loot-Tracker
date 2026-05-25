@@ -86,13 +86,55 @@ def compute_stats(period):
     }
 
 
+KOPFGELD_PAUSE_MIN = 30  # Minuten – Schwelle für Pause zwischen Kopfgeldern
+
+
+def _kopfgeld_streaks(entries):
+    """Berechnet aktuellen Streak und Allzeit-Rekord (immer über alle Einträge)."""
+    if not entries:
+        return 0, 0
+    # Allzeit-Rekord
+    best = 1
+    run  = 1
+    for i in range(1, len(entries)):
+        gap = (entries[i]["timestamp"] - entries[i-1]["timestamp"]).total_seconds() / 60
+        if gap < KOPFGELD_PAUSE_MIN:
+            run += 1
+            if run > best:
+                best = run
+        else:
+            run = 1
+    # Aktueller Streak – vom letzten Eintrag rückwärts
+    current = 1
+    for i in range(len(entries) - 1, 0, -1):
+        gap = (entries[i]["timestamp"] - entries[i-1]["timestamp"]).total_seconds() / 60
+        if gap < KOPFGELD_PAUSE_MIN:
+            current += 1
+        else:
+            break
+    return current, best
+
+
+def _kopfgeld_avg_time(entries):
+    """Durchschnittszeit pro Kopfgeld in Minuten – Pausen werden ignoriert."""
+    if len(entries) < 2:
+        return None
+    gaps = [
+        (entries[i]["timestamp"] - entries[i-1]["timestamp"]).total_seconds() / 60
+        for i in range(1, len(entries))
+        if (entries[i]["timestamp"] - entries[i-1]["timestamp"]).total_seconds() / 60 < KOPFGELD_PAUSE_MIN
+    ]
+    return round(sum(gaps) / len(gaps), 2) if gaps else None
+
+
 def compute_kopfgeld_stats(period):
     """Statistik für die Kopfgelder-Seite."""
     cutoff        = _cutoff(period)
     kopfgeld_cost = state.cfg.get("kopfgeld_cost", 0)
     with state.data_lock:
-        filtered = [e for e in state.kopfgeld_entries if e["timestamp"] >= cutoff]
-        last_any = state.kopfgeld_entries[-1]["timestamp"].isoformat() if state.kopfgeld_entries else None
+        all_entries = list(state.kopfgeld_entries)
+        filtered    = [e for e in all_entries if e["timestamp"] >= cutoff]
+        last_any    = all_entries[-1]["timestamp"].isoformat() if all_entries else None
     by_day, by_hour = defaultdict(int), defaultdict(int)
     for e in filtered:
         by_day[e["timestamp"].strftime("%d.%m.%y")] += 1
@@ -102,8 +144,10 @@ def compute_kopfgeld_stats(period):
     with state.data_lock:
         loot_f = [e for e in state.loot_entries if e["timestamp"] >= cutoff]
     total_yang_kopf    = sum(e["amount"] for e in loot_f if e["item"] == "Yang")
-    kopf_active_min    = max(1, int(_active_duration(filtered, threshold_min=30))) if len(filtered) >= 2 else 1
+    kopf_active_min    = max(1, int(_active_duration(filtered, threshold_min=KOPFGELD_PAUSE_MIN))) if len(filtered) >= 2 else 1
     yang_per_hour_kopf = int(total_yang_kopf / max(1, kopf_active_min / 60)) if total_yang_kopf > 0 else 0
+    current_streak, best_streak = _kopfgeld_streaks(all_entries)
+    avg_time_min = _kopfgeld_avg_time(filtered)
     return {
         "period":                 period,
         "total":                  len(filtered),
@@ -116,6 +160,9 @@ def compute_kopfgeld_stats(period):
         "total_cost":             total_cost,
         "yang_per_hour_kopfgeld": yang_per_hour_kopf,
         "kopf_active_min":        kopf_active_min,
+        "current_streak":         current_streak,
+        "best_streak":            best_streak,
+        "avg_time_min":           avg_time_min,
     }
 
 
