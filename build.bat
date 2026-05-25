@@ -48,10 +48,31 @@ if exist "dist\LootTracker.exe" (
     if exist "icons" xcopy /e /i /q "icons" "dist\icons" >nul
     rmdir /s /q "build" 2>nul
     del "LootTracker.spec" 2>nul
+
+    :: Version aus version.txt lesen
+    set /p VERSION=<version.txt
+
+    :: Alte Release-ZIP löschen falls vorhanden
+    if exist "LootTracker-%VERSION%.zip" del "LootTracker-%VERSION%.zip"
+
+    :: ZIP erstellen mit PowerShell
+    echo  [3/3] Erstelle Release-ZIP...
+    powershell -Command "Compress-Archive -Path 'dist\LootTracker.exe','dist\dashboard.html','dist\version.txt','dist\icons' -DestinationPath 'LootTracker-%VERSION%.zip' -Force"
+
+    echo.
     echo  ============================================
-    echo   FERTIG! dist\LootTracker.exe erstellt.
+    echo   FERTIG! Folgende Dateien wurden erstellt:
+    echo.
+    echo   EXE:  dist\LootTracker.exe
+    echo   ZIP:  LootTracker-%VERSION%.zip
+    echo.
+    echo   Naechste Schritte fuer den Release:
+    echo   1. Gehe auf github.com - Releases - New Release
+    echo   2. Tag: %VERSION%
+    echo   3. ZIP-Datei hochladen
+    echo   4. Publish release
     echo  ============================================
-    explorer "dist"
+    explorer "%~dp0"
 ) else (
     echo  ============================================
     echo   BUILD FEHLGESCHLAGEN!
