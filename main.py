@@ -12,6 +12,8 @@ import updater
 
 
 def main():
+    # .old-Dateien vom letzten Update aufräumen
+    updater.cleanup_old_files()
     # Auf neue Version prüfen (kehrt sofort zurück wenn kein Update nötig)
     updater.check_and_update()
 

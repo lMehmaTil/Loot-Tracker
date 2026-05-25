@@ -5,6 +5,7 @@ Wird beim Start von main.py aufgerufen. Kehrt zurück wenn kein Update nötig.
 
 import os
 import sys
+import time
 import zipfile
 import tempfile
 import threading
@@ -183,6 +184,15 @@ def _do_update(download_url: str, latest_version: str, win: _UpdateWindow):
                     os.makedirs(target_path, exist_ok=True)
                 else:
                     os.makedirs(os.path.dirname(target_path) or exe_dir, exist_ok=True)
+                    # Laufende EXE kann nicht direkt überschrieben werden (Windows-Lock).
+                    # Lösung: alte Datei mit eindeutigem Timestamp-Namen umbenennen,
+                    # damit kein Konflikt mit einer noch gesperrten .old-Datei entsteht.
+                    if os.path.exists(target_path):
+                        old_path = target_path + f".{int(time.time())}.old"
+                        try:
+                            os.rename(target_path, old_path)
+                        except OSError:
+                            pass
                     with zf.open(member) as src, open(target_path, "wb") as dst:
                         dst.write(src.read())
                 pct = 70 + int((i + 1) / max(len(members), 1) * 25)
@@ -190,7 +200,15 @@ def _do_update(download_url: str, latest_version: str, win: _UpdateWindow):
 
         os.unlink(tmp.name)
 
-        # 3) Fertig → Neustart
+        # 3) Version sichern – falls version.txt nicht in der ZIP war
+        try:
+            version_path = os.path.join(exe_dir, VERSION_FILE)
+            with open(version_path, "w", encoding="utf-8") as f:
+                f.write(latest_version)
+        except OSError:
+            pass
+
+        # 4) Fertig → Neustart
         win.schedule(0, lambda: win.set_status("Update abgeschlossen! Starte neu..."))
         win.schedule(0, lambda: win.set_progress(100))
         win.schedule(1800, lambda: _restart(win, exe_dir))
@@ -209,6 +227,26 @@ def _restart(win: _UpdateWindow, exe_dir: str):
 
 # ── Öffentliche API ───────────────────────────────────────────────────────────
 
+def cleanup_old_files():
+    """Löscht .old-Dateien die vom letzten Update übrig geblieben sind."""
+    exe_dir = _exe_dir()
+    for filename in os.listdir(exe_dir):
+        if filename.endswith(".old"):
+            try:
+                os.unlink(os.path.join(exe_dir, filename))
+            except OSError:
+                pass
+
+
+def _parse_version(tag: str) -> tuple:
+    """Wandelt 'v1.3' oder '1.3.2' in ein vergleichbares Tuple um."""
+    import re
+    nums = re.findall(r"\d+", tag)
+    while len(nums) < 3:
+        nums.append("0")
+    return tuple(int(n) for n in nums[:3])
+
+
 def check_and_update():
     """
     Prüft auf eine neue Version und zeigt ggf. das Update-Fenster.
@@ -218,8 +256,10 @@ def check_and_update():
     local   = _get_local_version()
     latest, url = _get_latest_release()
 
-    if not latest or not url or latest == local:
-        return  # Kein Update nötig – normal weiterstarten
+    if not latest or not url:
+        return
+    if _parse_version(latest) <= _parse_version(local):
+        return  # Lokal ist gleich oder neuer – kein Update nötig
 
     win = _UpdateWindow(latest)
     t = threading.Thread(target=_do_update, args=(url, latest, win), daemon=True)
