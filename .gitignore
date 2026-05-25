@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+
+# Persönliche Spieldateien (nicht teilen)
+*.log
+
+# Persönliche Konfiguration (jeder hat seine eigenen Einstellungen)
+config.json
+
+# Build-Output (wird durch build.bat neu erstellt)
+dist/
+build/
+*.exe
+*.spec
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,22 @@
+ICONS - Nihor2 Loot Tracker
+============================
+
+Bilder hier ablegen um Items ein Icon zuzuweisen.
+
+AUTOMATISCH (empfohlen):
+  Dateiname = Item-Name + Endung
+  Beispiele:
+    Yang.png
+    Erz.png
+    Drachenschuppe.png
+    Drachenstein Fragment.png
+
+  Formate: .png  .jpg  .jpeg  .gif  .webp
+  Größe:   beliebig (wird auf 20x20 px angezeigt)
+
+MANUELL (bei Sonderzeichen):
+  icon_map.json im Hauptordner anlegen:
+  {
+    "Großes Heiltrank": "heiltrank_gross.png",
+    "Item mit komischem Namen": "meinbild.png"
+  }

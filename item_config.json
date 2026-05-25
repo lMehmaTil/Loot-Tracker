@@ -1,0 +1,386 @@
+{
+  "Althors Kosmischer Staub": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Außergewöhnliche blaue Flamme": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Außergewöhnliche rote Flamme": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Blaue Perle": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Blauer Meteor": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Blauer Meteorsplitter": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Blauer Meteorstaub": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Blauer Tasman": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Blutrote Perle": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Blätter": {
+    "category": "gewoehnlich",
+    "price": 0
+  },
+  "Bruchstück": {
+    "category": "gewoehnlich",
+    "price": 0
+  },
+  "Diamant": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Diamantstein": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Eis Juwel": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Eisen": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Eissplitter": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Elite-Splitter": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Energiesplitter": {
+    "category": "gewoehnlich",
+    "price": 0
+  },
+  "Erfahrungsring (30m)": {
+    "category": "selten",
+    "price": 0
+  },
+  "Fragment der Geiststeine": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Gegenstand segnen": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Gegenstand verstärken (perm.)": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Gegenstand verzaubern (perm.)": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein Lava": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein der Hast": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein der Magie": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein der Monster": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein des Ausweichens": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein des Durchbruchs": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein des Lebenraubs": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein des Schutzes": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein des Todesstoßes": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein gegen Krieger": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein gegen Ninja": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Geiststein gegen Sura": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Gelbe Perle": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Großer Splitter": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Gräten": {
+    "category": "gewoehnlich",
+    "price": 0
+  },
+  "Grüner Meteor": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Grüner Meteorsplitter": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Grüner Meteorstaub": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Grüner Tasman": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Grüner Trank (G)": {
+    "category": "selten",
+    "price": 0
+  },
+  "Göttlicher Segen": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Göttliches Verzaubern": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Hammer des Althor": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Handschuhe des Diebes (30m)": {
+    "category": "selten",
+    "price": 0
+  },
+  "Himmelblaue Perle": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Juwel der Missgunst": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Juwel der Niedertracht": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Juwel der Weisheit": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Komprimierte Energie": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Lapislazuli": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Lava Juwel": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Lektüre Truhe [G-P]": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Lektüre Truhe [M-G]": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Lila Perle": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Magischer Schmiedehammer": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Medaille des Glücks (30m)": {
+    "category": "selten",
+    "price": 0
+  },
+  "Mithril": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Mondlicht-Schatztruhe": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Mystischer Splitter": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Natarajas Medaillon": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Perlenstaub": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Portalscherbe": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Purpur Schmiedehammer": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Regenbogenstein": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Roter Meteor": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Roter Meteorsplitter": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Roter Meteorstaub": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Rubinerz": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Sagenhafter Segen": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Sagenhaftes Verzaubern": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Schatten Juwel": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Schattensplitter": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Schatulle der Geiststeine": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Schimmerstein": {
+    "category": "wertvoll",
+    "price": 0
+  },
+  "Schwarze Perle": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Seelenkristallerz": {
+    "category": "gewoehnlich",
+    "price": 0
+  },
+  "Seelenstein der Untoten": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Seelenstein des Feuers": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Seelenstein des Windes": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Segensschriftrolle": {
+    "category": "selten",
+    "price": 0
+  },
+  "Sonnensplitter": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Steinstück": {
+    "category": "gewoehnlich",
+    "price": 0
+  },
+  "Sturmkristallsplitter": {
+    "category": "gewoehnlich",
+    "price": 0
+  },
+  "Stück Edelstein": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Stück kaputte Rüstung": {
+    "category": "gewoehnlich",
+    "price": 0
+  },
+  "Trank der Hast": {
+    "category": "selten",
+    "price": 0
+  },
+  "Trank der Hast +0": {
+    "category": "selten",
+    "price": 0
+  },
+  "Violetter Tasman": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Violetter Trank (30m)": {
+    "category": "selten",
+    "price": 0
+  },
+  "Weiße Perle": {
+    "category": "ungewoehnlich",
+    "price": 0
+  },
+  "Yang": {
+    "category": "yang",
+    "price": 0
+  },
+  "Grüner Edelstein": {
+    "category": "selten",
+    "price": 0
+  },
+  "Blauer Edelstein": {
+    "category": "selten",
+    "price": 0
+  }
+}

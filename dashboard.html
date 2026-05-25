@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nihor2 – Loot Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg:       #0a0e1a; --surface:  #111827; --surface2: #1a2236; --surface3: #1e2a40;
+    --border:   #2a3a5c; --border2:  #3a4f78; --gold:     #4f9cf9; --gold2:    #7eb8ff;
+    --gold-dim: #2a4a7a; --red:      #e05555; --orange:   #f5a623; --bounty:   #a78bfa;
+    --dungeon:  #34d399; --green:    #4ade80; --text:     #e2e8f0; --muted:    #6b7fa8;
+    --muted2:   #3d4f6e;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; min-height:100vh;
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% 0%,rgba(79,156,249,0.06) 0%,transparent 70%),
+      repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(42,58,92,0.12) 40px,rgba(42,58,92,0.12) 41px),
+      repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(42,58,92,0.07) 60px,rgba(42,58,92,0.07) 61px);
+  }
+  header {
+    background:linear-gradient(180deg,#111e38 0%,#0a0e1a 100%); border-bottom:1px solid var(--border2);
+    padding:0 24px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:100; height:58px;
+    box-shadow:0 2px 20px rgba(0,0,0,0.6),0 1px 0 rgba(79,156,249,0.15);
+  }
+  header::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,transparent 0%,#2a5fa8 20%,var(--gold) 50%,#2a5fa8 80%,transparent 100%);
+  }
+  .logo {
+    display:flex; align-items:center; gap:14px; font-family:'Inter',sans-serif; font-size:1.05rem;
+    font-weight:700; letter-spacing:0.02em; flex-shrink:0;
+    background:linear-gradient(135deg,var(--gold2) 0%,var(--gold) 50%,#2a6abf 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .logo-icon { font-size:1.5rem; -webkit-text-fill-color:initial; filter:drop-shadow(0 0 6px rgba(79,156,249,0.6)); }
+  .logo-sub { font-family:'Inter',sans-serif; font-size:0.6rem; letter-spacing:0.15em; color:var(--muted); -webkit-text-fill-color:var(--muted); text-transform:uppercase; display:block; margin-top:-2px; font-weight:500; }
+  .page-nav { display:flex; height:100%; align-items:stretch; margin:0 20px; flex:1; justify-content:center; }
+  .page-tab {
+    padding:0 20px; border:none; border-bottom:2px solid transparent; background:transparent;
+    color:var(--muted); cursor:pointer; font-family:'Inter',sans-serif; font-size:0.72rem;
+    letter-spacing:0.05em; font-weight:600; transition:all 0.2s; display:flex;
+    align-items:center; gap:6px; white-space:nowrap;
+  }
+  .page-tab:hover { color:var(--text); background:rgba(255,255,255,0.04); }
+  .page-tab.active { color:var(--gold2); border-bottom-color:var(--gold); background:rgba(79,156,249,0.07); }
+  .header-right { display:flex; gap:10px; align-items:center; flex-shrink:0; }
+  .live-badge {
+    display:flex; align-items:center; gap:6px; font-family:'Inter',sans-serif; font-size:0.65rem;
+    letter-spacing:0.1em; color:var(--green); background:rgba(74,222,128,0.08);
+    border:1px solid rgba(74,222,128,0.25); padding:5px 12px; border-radius:4px;
+  }
+  .live-dot { width:6px; height:6px; background:var(--green); border-radius:50%; animation:pulse 1.5s ease infinite; box-shadow:0 0 6px var(--green); }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);} }
+  .settings-btn { background:var(--surface2); border:1px solid var(--border2); border-radius:3px; color:var(--muted); cursor:pointer; font-size:1rem; padding:6px 10px; line-height:1; transition:all 0.2s; }
+  .settings-btn:hover { border-color:var(--gold); color:var(--gold); background:rgba(201,167,42,0.08); box-shadow:0 0 10px rgba(201,167,42,0.2); }
+  .divider { display:flex; align-items:center; gap:12px; padding:14px 24px 0; }
+  .divider-line { flex:1; height:1px; background:linear-gradient(90deg,transparent,var(--border2),transparent); }
+  .divider-gem { width:6px; height:6px; background:var(--gold); transform:rotate(45deg); box-shadow:0 0 8px rgba(201,167,42,0.5); flex-shrink:0; }
+  .period-bar { display:flex; gap:6px; padding:12px 24px 0; }
+  .tab { padding:7px 20px; border-radius:3px; border:1px solid var(--border); background:var(--surface); color:var(--muted); cursor:pointer; font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.08em; font-weight:600; transition:all 0.2s; }
+  .tab:hover { border-color:var(--gold-dim); color:var(--text); background:var(--surface2); }
+  .tab.active { background:linear-gradient(180deg,#2a1e08 0%,#1a1204 100%); border-color:var(--gold); color:var(--gold2); box-shadow:0 0 12px rgba(201,167,42,0.15),inset 0 1px 0 rgba(201,167,42,0.2); }
+  .stat-card,.chart-card,.table-card,.feed-card,.dungeon-table-card { background:linear-gradient(180deg,var(--surface2) 0%,var(--surface) 100%); border:1px solid var(--border); border-radius:4px; position:relative; overflow:hidden; }
+  .stat-card::before,.chart-card::before,.table-card::before,.feed-card::before,.dungeon-table-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(201,167,42,0.3),transparent); }
+  .stat-card::after { content:''; position:absolute; top:5px; right:5px; width:4px; height:4px; background:var(--border2); transform:rotate(45deg); }
+  .stat-card { padding:18px 20px; display:flex; flex-direction:column; gap:5px; }
+  .stat-label { font-family:'Cinzel',serif; font-size:0.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.12em; font-weight:600; }
+  .stat-value { font-family:'Cinzel',serif; font-size:1.9rem; font-weight:700; line-height:1; color:var(--text); text-shadow:0 0 20px rgba(232,213,168,0.2); }
+  .stat-value.yang    { color:var(--gold2);   text-shadow:0 0 20px rgba(240,192,64,0.3); }
+  .stat-value.bounty  { color:var(--bounty);  text-shadow:0 0 20px rgba(155,89,210,0.3); }
+  .stat-value.dungeon { color:var(--dungeon); text-shadow:0 0 20px rgba(46,134,222,0.3); }
+  .stat-value.red     { color:var(--red);     text-shadow:0 0 20px rgba(184,50,40,0.3); }
+  .stat-value.green   { color:var(--green);   text-shadow:0 0 20px rgba(78,203,113,0.3); }
+  .stat-sub  { font-size:0.78rem; color:var(--muted); font-style:italic; }
+  .stat-sub2 { font-family:'Cinzel',serif; font-size:0.58rem; color:var(--gold-dim); text-transform:uppercase; letter-spacing:0.1em; font-weight:600; margin-top:6px; }
+  .stat-value-sm { font-family:'Cinzel',serif; font-size:1.3rem; font-weight:700; line-height:1; }
+  .stat-value-sm.yang { color:var(--gold2); }
+  .pause-badge { display:inline-block; font-size:0.65rem; color:var(--orange); background:rgba(218,99,37,0.12); border:1px solid rgba(218,99,37,0.3); border-radius:2px; padding:1px 6px; margin-top:3px; font-family:'Cinzel',serif; letter-spacing:0.05em; }
+  .bounty-last { font-size:0.72rem; color:var(--bounty); margin-top:3px; font-style:italic; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .main { padding:14px 24px 60px; display:grid; gap:14px; grid-template-columns:1fr 1fr 1fr 1fr; grid-template-areas:"stat-yang stat-items stat-bounty stat-dungeon" "chart chart chart chart" "table table table feed"; }
+  #stat-yang    { grid-area:stat-yang; }
+  #stat-items   { grid-area:stat-items; }
+  #stat-bounty  { grid-area:stat-bounty; }
+  #stat-dungeon { grid-area:stat-dungeon; }
+  .chart-card   { grid-area:chart; padding:18px 20px; }
+  .card-title { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--gold); text-transform:uppercase; letter-spacing:0.12em; font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+  .card-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border2),transparent); }
+  .chart-wrap { height:175px; }
+  .chart-toggle { display:flex; gap:4px; margin-left:auto; margin-bottom:-2px; }
+  .chart-tab { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:0.08em; padding:3px 10px; border:1px solid var(--border); border-radius:2px; background:transparent; color:var(--muted); cursor:pointer; transition:all 0.15s; }
+  .chart-tab:hover { border-color:var(--gold-dim); color:var(--text); }
+  .chart-tab.active { border-color:var(--gold); color:var(--gold); background:rgba(201,167,42,0.08); }
+  .table-card { grid-area:table; padding:18px 20px; display:flex; flex-direction:column; }
+  .table-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .search-box { background:var(--surface3); border:1px solid var(--border); border-radius:3px; padding:5px 10px; color:var(--text); font-family:'Crimson Pro',serif; font-size:0.85rem; outline:none; width:160px; transition:border-color 0.2s; }
+  .search-box:focus { border-color:var(--gold-dim); }
+  .search-box::placeholder { color:var(--muted2); }
+  .items-split { display:flex; gap:0; min-height:360px; }
+  .items-half { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+  .items-half+.items-half { border-left:1px solid var(--border); padding-left:14px; margin-left:14px; }
+  .fav-header { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--gold); text-transform:uppercase; letter-spacing:0.12em; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .fav-header::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border2),transparent); }
+  .fav-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:3px; max-height:310px; }
+  .fav-btn { background:transparent; border:none; cursor:pointer; font-size:0.85rem; padding:2px 5px; opacity:0.25; transition:opacity 0.15s; line-height:1; flex-shrink:0; }
+  .fav-btn:hover { opacity:0.8; }
+  .fav-btn.active { opacity:1; }
+  .items-list { overflow-y:auto; max-height:310px; display:flex; flex-direction:column; gap:3px; }
+  .item-row { display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:2px; background:var(--surface3); border:1px solid transparent; transition:all 0.15s; min-height:44px; }
+  .item-row:hover { border-color:var(--border); background:#281c0a; }
+  .item-name { font-size:0.95rem; color:var(--text); display:flex; align-items:center; gap:8px; }
+  .item-icon { width:32px; height:32px; object-fit:contain; image-rendering:pixelated; flex-shrink:0; }
+  .feed-icon { width:18px; height:18px; object-fit:contain; image-rendering:pixelated; vertical-align:middle; margin-right:3px; }
+  .item-bar-wrap { flex:1; margin:0 12px; height:3px; background:var(--border); border-radius:1px; overflow:hidden; }
+  .item-bar { height:100%; background:linear-gradient(90deg,var(--red),var(--orange)); border-radius:1px; transition:width 0.4s ease; }
+  .item-count { font-family:'Cinzel',serif; font-size:0.8rem; font-weight:600; color:var(--orange); min-width:50px; text-align:right; }
+  .yang-row .item-name { color:var(--gold2); font-weight:600; }
+  .yang-row .item-bar  { background:linear-gradient(90deg,var(--gold),var(--gold2)); }
+  .yang-row .item-count{ color:var(--gold2); }
+  .feed-card { grid-area:feed; padding:18px 20px; display:flex; flex-direction:column; }
+  .feed-list { overflow-y:auto; max-height:390px; display:flex; flex-direction:column; gap:3px; margin-top:4px; }
+  .feed-item { font-size:0.82rem; padding:6px 9px; border-radius:2px; background:var(--surface3); border-left:2px solid var(--border2); animation:slideIn 0.25s ease; line-height:1.4; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);} }
+  .feed-time   { color:var(--muted); margin-right:6px; font-size:0.75rem; }
+  .feed-amount { color:var(--orange); font-weight:700; margin-right:4px; font-family:'Cinzel',serif; font-size:0.78rem; }
+  .feed-item.yang-entry    { border-left-color:var(--gold);    background:rgba(201,167,42,0.05); }
+  .feed-item.yang-entry .feed-amount { color:var(--gold2); }
+  .feed-item.bounty-entry  { border-left-color:var(--bounty);  background:rgba(155,89,210,0.07); }
+  .feed-item.bounty-entry .feed-amount { color:var(--bounty); }
+  .feed-item.dungeon-entry { border-left-color:var(--dungeon); background:rgba(46,134,222,0.07); }
+  .feed-item.dungeon-entry .feed-amount { color:var(--dungeon); }
+  .subpage-content { padding:14px 24px 60px; display:flex; flex-direction:column; gap:14px; }
+  .stats-row   { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .two-col     { display:grid; grid-template-columns:1fr 340px; gap:14px; }
+  .two-col-wide{ display:grid; grid-template-columns:2fr 1fr; gap:14px; }
+  .dungeon-table-card { padding:18px 20px; display:flex; flex-direction:column; }
+  .zone-name-cell.unknown { color:var(--muted); font-style:italic; font-family:'Crimson Pro',serif; }
+  .dungeon-rows { display:flex; flex-direction:column; gap:4px; margin-top:4px; overflow-y:auto; max-height:240px; }
+  .dungeon-row { display:grid; grid-template-columns:1fr 80px 120px 100px; gap:8px; padding:9px 12px; background:var(--surface3); border:1px solid transparent; border-radius:2px; align-items:center; font-size:0.85rem; transition:border-color 0.15s; }
+  .dungeon-row:hover { border-color:var(--border); }
+  .dungeon-row.header-row { font-family:'Cinzel',serif; font-size:0.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; background:transparent; border-color:transparent; padding-bottom:4px; }
+  .dungeon-row .dn-name { color:var(--text); font-weight:600; }
+  .dungeon-row .dn-runs { color:var(--dungeon); font-family:'Cinzel',serif; font-weight:700; text-align:center; }
+  .dungeon-row .dn-cost { color:var(--red); text-align:right; font-family:'Cinzel',serif; font-size:0.8rem; }
+  .dungeon-row .dn-avg  { color:var(--muted); text-align:right; font-size:0.78rem; }
+  .kopf-entries { display:flex; flex-direction:column; gap:3px; overflow-y:auto; max-height:240px; }
+  .kopf-entry { display:flex; justify-content:space-between; align-items:center; padding:7px 12px; background:var(--surface3); border:1px solid transparent; border-left:2px solid var(--bounty); border-radius:2px; font-size:0.83rem; transition:border-color 0.15s; }
+  .kopf-entry:hover { border-color:var(--bounty); }
+  .kopf-entry .ke-time  { color:var(--muted); font-size:0.75rem; }
+  .kopf-entry .ke-label { color:var(--bounty); font-weight:600; }
+  .kopf-entry .ke-cost  { color:var(--red); font-family:'Cinzel',serif; font-size:0.78rem; }
+  .action-btn { background:transparent; border:1px solid var(--border2); border-radius:2px; color:var(--muted); padding:4px 12px; font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.08em; cursor:pointer; transition:all 0.2s; }
+  .action-btn:hover { border-color:var(--red); color:var(--red); }
+  .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; color:var(--muted2); gap:8px; font-style:italic; font-size:0.9rem; }
+  .empty-icon { font-size:1.8rem; opacity:0.5; }
+  .status-bar { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:5px 24px; font-size:0.7rem; color:var(--muted); display:flex; gap:24px; font-family:'Cinzel',serif; letter-spacing:0.04em; }
+  .status-bar::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--border2),transparent); }
+  .status-bar span { display:flex; align-items:center; gap:5px; }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:500; align-items:flex-start; justify-content:center; backdrop-filter:blur(2px); padding-top:40px; overflow-y:auto; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:linear-gradient(160deg,#1e1508 0%,#120d05 100%); border:1px solid var(--border2); border-radius:4px; width:600px; max-width:95vw; margin-bottom:40px; box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(201,167,42,0.1) inset; position:relative; overflow:hidden; }
+  .modal::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); border-radius:4px 4px 0 0; z-index:1; }
+  .modal-header { padding:22px 28px 0; }
+  .modal-title { font-family:'Cinzel',serif; font-size:1rem; font-weight:700; color:var(--gold2); letter-spacing:0.05em; }
+  .modal-section-title { font-family:'Cinzel',serif; font-size:0.78rem; font-weight:700; color:var(--gold); margin-bottom:10px; letter-spacing:0.06em; display:flex; justify-content:space-between; align-items:center; }
+  .modal-sub { font-size:0.85rem; color:var(--muted); line-height:1.5; font-style:italic; }
+  .modal-tab-bar { display:flex; gap:0; border-bottom:1px solid var(--border2); margin-top:16px; }
+  .modal-tab-btn { padding:9px 18px; border:none; border-bottom:2px solid transparent; background:transparent; color:var(--muted); cursor:pointer; font-family:'Cinzel',serif; font-size:0.64rem; letter-spacing:0.08em; font-weight:600; transition:all 0.2s; white-space:nowrap; display:flex; align-items:center; gap:6px; margin-bottom:-1px; }
+  .modal-tab-btn:hover { color:var(--text); background:rgba(255,255,255,0.03); }
+  .modal-tab-btn.active { color:var(--gold2); border-bottom-color:var(--gold); background:rgba(79,156,249,0.05); }
+  .modal-tab-badge { font-size:0.55rem; padding:1px 5px; border-radius:2px; font-family:'Inter',sans-serif; letter-spacing:0.04em; }
+  .modal-tab-badge.ok   { background:rgba(74,222,128,0.15); color:var(--green); border:1px solid rgba(74,222,128,0.3); }
+  .modal-tab-badge.warn { background:rgba(245,166,35,0.15); color:var(--orange); border:1px solid rgba(245,166,35,0.3); }
+  .modal-tab-panel { display:none; padding:22px 28px; }
+  .modal-tab-panel.active { display:block; }
+  .modal label { display:block; font-family:'Cinzel',serif; font-size:0.62rem; color:var(--gold); text-transform:uppercase; letter-spacing:0.12em; font-weight:600; margin-bottom:7px; }
+  .input-row { display:flex; gap:8px; }
+  .modal-input { flex:1; background:var(--surface3); border:1px solid var(--border); border-radius:3px; padding:9px 12px; color:var(--text); font-size:0.83rem; font-family:'Consolas',monospace; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
+  .modal-input:focus { border-color:var(--gold-dim); box-shadow:0 0 0 2px rgba(201,167,42,0.1); }
+  .modal-input.sm { padding:6px 10px; font-size:0.78rem; }
+  .btn-browse { background:var(--surface3); border:1px solid var(--border2); border-radius:3px; padding:8px 14px; color:var(--text); cursor:pointer; font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.05em; white-space:nowrap; transition:all 0.2s; flex-shrink:0; }
+  .btn-browse:hover { border-color:var(--gold); color:var(--gold); background:rgba(201,167,42,0.08); }
+  .btn-add { background:transparent; border:1px solid var(--border2); border-radius:2px; padding:4px 12px; color:var(--muted); cursor:pointer; font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.06em; transition:all 0.2s; white-space:nowrap; }
+  .btn-add:hover { border-color:var(--dungeon); color:var(--dungeon); }
+  .modal-hint { font-size:0.75rem; margin-top:7px; min-height:18px; font-style:italic; }
+  .modal-hint.ok   { color:var(--green); }
+  .modal-hint.warn { color:var(--orange); }
+  .modal-hint.err  { color:var(--red); }
+  .modal-field-gap { margin-bottom:16px; }
+  .modal-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 28px 22px; border-top:1px solid var(--border); background:rgba(0,0,0,0.15); }
+  .btn-cancel { background:transparent; border:1px solid var(--border); border-radius:3px; padding:8px 20px; color:var(--muted); cursor:pointer; font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.06em; transition:all 0.2s; }
+  .btn-cancel:hover { border-color:var(--muted); color:var(--text); }
+  .btn-save { background:linear-gradient(180deg,#3a2810 0%,#2a1c08 100%); border:1px solid var(--gold); border-radius:3px; padding:8px 24px; color:var(--gold2); cursor:pointer; font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.08em; font-weight:700; transition:all 0.2s; box-shadow:0 0 12px rgba(201,167,42,0.15); }
+  .btn-save:hover { background:linear-gradient(180deg,#4a3418 0%,#38240e 100%); box-shadow:0 0 20px rgba(201,167,42,0.3); }
+  .btn-save:disabled { opacity:0.4; cursor:not-allowed; box-shadow:none; }
+  .dungeon-cfg-row { display:grid; grid-template-columns:1fr 1fr 110px 28px; gap:6px; align-items:center; margin-bottom:6px; }
+  .dungeon-cfg-row .btn-del { background:transparent; border:1px solid var(--border2); border-radius:2px; color:var(--muted); padding:6px; cursor:pointer; font-size:0.78rem; transition:all 0.2s; text-align:center; }
+  .dungeon-cfg-row .btn-del:hover { border-color:var(--red); color:var(--red); }
+  .item-cat-tabs { display:flex; gap:4px; margin-bottom:10px; flex-wrap:wrap; }
+  .item-cat-tab { padding:3px 10px; border:1px solid var(--border); border-radius:2px; background:transparent; color:var(--muted); cursor:pointer; font-family:'Cinzel',serif; font-size:0.58rem; letter-spacing:0.07em; font-weight:600; transition:all 0.15s; }
+  .item-cat-tab:hover { border-color:var(--border2); color:var(--text); }
+  .item-cat-tab.active { border-color:var(--gold); color:var(--gold2); background:rgba(79,156,249,0.06); }
+  .item-badge { display:inline-block; font-size:0.58rem; padding:1px 6px; border-radius:2px; font-family:'Inter',sans-serif; letter-spacing:0.04em; white-space:nowrap; flex-shrink:0; }
+  .item-badge.legendaer    { background:rgba(240,192,64,0.15);  color:#f0c040; border:1px solid rgba(240,192,64,0.4); }
+  .item-badge.wertvoll     { background:rgba(167,139,250,0.15); color:#a78bfa; border:1px solid rgba(167,139,250,0.3); }
+  .item-badge.selten       { background:rgba(79,156,249,0.12);  color:var(--gold2); border:1px solid rgba(79,156,249,0.25); }
+  .item-badge.ungewoehnlich{ background:rgba(74,222,128,0.12);  color:#4ade80; border:1px solid rgba(74,222,128,0.28); }
+  .item-badge.gewoehnlich  { background:rgba(200,200,200,0.08); color:#9aa5b8; border:1px solid rgba(200,200,200,0.18); }
+  .item-price { font-size:0.68rem; color:var(--gold); font-family:'Cinzel',serif; white-space:nowrap; flex-shrink:0; }
+  .item-edit-btn { opacity:0; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--muted); cursor:pointer; font-size:0.68rem; padding:2px 7px; border-radius:4px; transition:opacity 0.15s, background 0.15s; flex-shrink:0; line-height:1.4; }
+  .item-edit-btn:hover { background:rgba(255,255,255,0.12); color:var(--fg); }
+  .item-row:hover .item-edit-btn { opacity:1; }
+  .item-row.legendaer { border-left:2px solid rgba(240,192,64,0.6);  background:rgba(240,192,64,0.04); }
+  .item-row.legendaer:hover { background:rgba(240,192,64,0.08); }
+  .item-row.wertvoll  { border-left:2px solid rgba(167,139,250,0.5); background:rgba(167,139,250,0.04); }
+  .item-row.wertvoll:hover  { background:rgba(167,139,250,0.08); }
+  .item-edit-overlay { display:none; position:fixed; inset:0; z-index:600; }
+  .item-edit-overlay.open { display:block; }
+  .item-edit-popup { position:fixed; background:linear-gradient(160deg,#1e1508 0%,#120d05 100%); border:1px solid var(--border2); border-radius:4px; padding:16px 18px; width:320px; box-shadow:0 20px 60px rgba(0,0,0,0.7); z-index:601; }
+  .item-edit-popup::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); border-radius:4px 4px 0 0; }
+  .item-edit-name { font-size:0.82rem; color:var(--text); font-weight:600; margin-bottom:12px; word-break:break-word; }
+  .item-edit-row { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+  .item-cat-select { background:var(--surface3); border:1px solid var(--border); border-radius:3px; padding:6px 10px; color:var(--text); font-size:0.78rem; outline:none; flex:1; }
+  .item-price-input { background:var(--surface3); border:1px solid var(--border); border-radius:3px; padding:6px 10px; color:var(--text); font-size:0.78rem; font-family:'Consolas',monospace; outline:none; width:100%; }
+  .item-edit-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-track { background:var(--surface); }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--gold-dim); }
+  @media (max-width:1100px) {
+    .main { grid-template-columns:1fr 1fr; grid-template-areas:"stat-yang stat-items" "stat-bounty stat-dungeon" "chart chart" "table table" "feed feed"; }
+    .stats-row { grid-template-columns:1fr 1fr; }
+    .two-col,.two-col-wide { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-icon">&#x2694;&#xFE0F;</span>
+    <div>Nihor2 Loot Tracker<span class="logo-sub">Chronicles of Jinteia</span></div>
+  </div>
+  <nav class="page-nav">
+    <button class="page-tab active" data-page="dashboard"  onclick="switchPage('dashboard',  this)">&#x26DC; Dashboard</button>
+    <button class="page-tab"        data-page="kopfgelder" onclick="switchPage('kopfgelder', this)">&#x1F3AF; Kopfgelder</button>
+    <button class="page-tab"        data-page="dungeons"   onclick="switchPage('dungeons',   this)">&#x1F3F0; Dungeons</button>
+    <button class="page-tab"        data-page="portale"    onclick="switchPage('portale',    this)">&#x1F300; Portale</button>
+  </nav>
+  <div class="header-right">
+    <div id="live-badge" class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <button class="settings-btn" onclick="openSettings()" title="Einstellungen">&#x2699;&#xFE0F;</button>
+  </div>
+</header>
+
+<!-- Einstellungen Modal -->
+<div class="modal-overlay" id="settings-overlay" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">&#x2699;&#xFE0F; Einstellungen</div>
+      <div class="modal-tab-bar">
+        <button class="modal-tab-btn active" onclick="switchSettingsTab('allgemein', this)">&#x1F4DC; Allgemein</button>
+        <button class="modal-tab-btn"        onclick="switchSettingsTab('kosten',    this)">&#x1F4B0; Kosten</button>
+        <button class="modal-tab-btn"        onclick="switchSettingsTab('dungeons',  this)">&#x1F3F0; Dungeons</button>
+        <button class="modal-tab-btn"        onclick="switchSettingsTab('ocr',       this)" id="ocr-tab-btn">&#x1F4F7; OCR <span id="ocr-status-badge" class="modal-tab-badge"></span></button>
+        <button class="modal-tab-btn"        onclick="switchSettingsTab('updates',   this)">&#x1F504; Updates</button>
+      </div>
+    </div>
+
+    <!-- Tab: Allgemein -->
+    <div class="modal-tab-panel active" id="stab-allgemein">
+      <div class="modal-field-gap">
+        <label for="cfg-logpath">Log-Datei</label>
+        <div class="input-row">
+          <input class="modal-input" id="cfg-logpath" type="text" placeholder="Datei auswaehlen..." oninput="checkPath()">
+          <button class="btn-browse" onclick="browseFile()">&#x1F4C2; Durchsuchen</button>
+        </div>
+        <div class="modal-hint" id="cfg-hint"></div>
+      </div>
+      <div class="modal-field-gap">
+        <label for="cfg-pause-threshold">Pause-Schwellwert</label>
+        <div class="input-row" style="align-items:center">
+          <input class="modal-input" id="cfg-pause-threshold" type="number" min="1" max="60" placeholder="3" style="max-width:100px">
+          <span style="font-size:0.82rem;color:var(--muted);white-space:nowrap">Minuten ohne Loot = Pause</span>
+        </div>
+        <div class="modal-hint" style="color:var(--muted)">Zeitluecken zwischen Loot-Events die groesser als dieser Wert sind, werden als Pause gewertet.</div>
+      </div>
+    </div>
+
+    <!-- Tab: Kosten -->
+    <div class="modal-tab-panel" id="stab-kosten">
+      <div class="modal-field-gap">
+        <label for="cfg-kopfgeld-cost">Kopfgeld-Kosten (Yang pro Kopfgeld)</label>
+        <input class="modal-input" id="cfg-kopfgeld-cost" type="number" min="0" placeholder="z.B. 2500000" style="width:100%">
+        <div class="modal-hint" style="color:var(--muted)">Yang-Betrag fuer Passiermarken oder Aufwand pro Kopfgeld-Auftrag. Wird fuer die Gewinn-Berechnung verwendet.</div>
+      </div>
+    </div>
+
+    <!-- Tab: Dungeons -->
+    <div class="modal-tab-panel" id="stab-dungeons">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.06em;font-weight:600">Konfigurierte Dungeons</span>
+        <button class="btn-add" onclick="addDungeonRow()">+ Dungeon hinzufuegen</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 110px 28px;gap:6px;margin-bottom:6px;padding:0 2px">
+        <div style="font-family:'Cinzel',serif;font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Name</div>
+        <div style="font-family:'Cinzel',serif;font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Kisten-Item (Log)</div>
+        <div style="font-family:'Cinzel',serif;font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Kosten (Yang)</div>
+        <div></div>
+      </div>
+      <div id="dungeon-cfg-list" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:0"></div>
+      <div class="modal-hint" style="color:var(--muted);margin-top:10px">Das Kisten-Item muss exakt wie in der Log-Datei geschrieben sein. Jede Kiste = 1 Dungeon-Abschluss.</div>
+    </div>
+
+    <!-- Tab: OCR -->
+    <div class="modal-tab-panel" id="stab-ocr">
+      <div class="modal-field-gap">
+        <label>Tesseract-Pfad (tesseract.exe)</label>
+        <div class="input-row">
+          <input class="modal-input" id="cfg-tesseract-path" type="text" placeholder="z.B. C:\Program Files\Tesseract-OCR\tesseract.exe">
+          <button class="btn-browse" onclick="checkTesseract()">&#x2714; Prüfen</button>
+        </div>
+        <div id="tesseract-hint" class="modal-hint" style="color:var(--muted)">Leer lassen fuer automatische Suche.</div>
+      </div>
+      <div class="modal-field-gap">
+        <label>Spielfenster / Monitor</label>
+        <div class="input-row">
+          <select class="modal-input" id="cfg-monitor" style="flex:1"></select>
+          <button class="btn-browse" onclick="loadMonitors()">&#x1F504; Aktualisieren</button>
+        </div>
+      </div>
+      <div class="modal-field-gap">
+        <label>Chat-Region (prozentual 0.0 – 1.0)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-bottom:5px">Oben (chat_top)</div>
+            <input class="modal-input" id="cfg-chat-top" type="number" min="0" max="1" step="0.01" style="width:100%" placeholder="0.62">
+          </div>
+          <div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-bottom:5px">Unten (chat_bottom)</div>
+            <input class="modal-input" id="cfg-chat-bottom" type="number" min="0" max="1" step="0.01" style="width:100%" placeholder="1.0">
+          </div>
+          <div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-bottom:5px">Links (chat_left)</div>
+            <input class="modal-input" id="cfg-chat-left" type="number" min="0" max="1" step="0.01" style="width:100%" placeholder="0.25">
+          </div>
+          <div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-bottom:5px">Rechts (chat_right)</div>
+            <input class="modal-input" id="cfg-chat-right" type="number" min="0" max="1" step="0.01" style="width:100%" placeholder="0.75">
+          </div>
+        </div>
+        <div class="modal-hint" style="color:var(--muted)">Bei anderer Aufloesung oder UI-Skalierung anpassen.</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <button class="btn-browse" onclick="testOcr()" style="flex:1">&#x1F50D; OCR-Region testen</button>
+        <button class="btn-browse" onclick="debugOcr()" style="flex:1;background:var(--border)">&#x1F527; Diagnose</button>
+      </div>
+      <div id="ocr-test-result" style="font-size:0.78rem;color:var(--muted);min-height:18px;word-break:break-all"></div>
+    </div>
+
+    <!-- Tab: Updates -->
+    <div class="modal-tab-panel" id="stab-updates">
+      <div class="modal-field-gap">
+        <label>Aktuelle Version</label>
+        <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold2);margin-top:4px" id="current-version-display">&#x2014;</div>
+      </div>
+      <div class="modal-field-gap">
+        <label>Auf neue Version prüfen</label>
+        <div class="modal-hint" style="color:var(--muted)">Vergleicht deine Version mit der neuesten Version auf GitHub.</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn-browse" onclick="checkForUpdates()" id="update-check-btn">&#x1F504; Jetzt prüfen</button>
+          <span id="update-result" style="font-size:0.85rem"></span>
+        </div>
+      </div>
+      <div class="modal-field-gap">
+        <label>Automatischer Update-Check</label>
+        <div class="modal-hint" style="color:var(--muted)">Beim Start des Loot Trackers wird automatisch auf Updates geprüft. Wenn eine neue Version gefunden wird, öffnet sich ein Update-Fenster.</div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cfg-cancel-btn" onclick="closeSettings()">Abbrechen</button>
+      <button class="btn-save"   id="cfg-save-btn"   onclick="saveSettings()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="divider"><div class="divider-line"></div><div class="divider-gem"></div><div class="divider-line"></div></div>
+<div class="period-bar">
+  <button class="tab"        onclick="setPeriod('hour', this)">Letzte Stunde</button>
+  <button class="tab active" onclick="setPeriod('today', this)">Heute</button>
+  <button class="tab"        onclick="setPeriod('week', this)">7 Tage</button>
+  <button class="tab"        onclick="setPeriod('all', this)">Gesamt</button>
+</div>
+
+<!-- PAGE: DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="main">
+    <div class="stat-card" id="stat-yang">
+      <div class="stat-label">&#x26DC; Yang verdient</div>
+      <div class="stat-value yang" id="val-yang">&#x2014;</div>
+      <div class="stat-sub" id="sub-yang">Lade...</div>
+      <div class="stat-sub2">&#x26A1; Yang / Stunde</div>
+      <div class="stat-value-sm yang" id="val-rate">&#x2014;</div>
+      <div id="pause-badge" class="pause-badge" style="display:none"></div>
+    </div>
+    <div class="stat-card" id="stat-items">
+      <div class="stat-label">&#x1F5E1; Items gefarmt</div>
+      <div class="stat-value" id="val-items">&#x2014;</div>
+      <div class="stat-sub" id="sub-items">Verschiedene Item-Typen</div>
+    </div>
+    <div class="stat-card" id="stat-bounty">
+      <div class="stat-label">&#x1F3AF; Kopfgelder</div>
+      <div class="stat-value bounty" id="val-bounty">&#x2014;</div>
+      <div class="stat-sub" id="sub-bounty">Im gewahlten Zeitraum</div>
+      <div class="bounty-last" id="bounty-last" style="display:none"></div>
+      <div id="bounty-hint" class="stat-sub" style="display:none;color:var(--orange)">OCR inaktiv</div>
+    </div>
+    <div class="stat-card" id="stat-dungeon">
+      <div class="stat-label">&#x1F3F0; Dungeon Abschlusse</div>
+      <div class="stat-value dungeon" id="val-dungeon">&#x2014;</div>
+      <div class="stat-sub" id="sub-dungeon">Im gewahlten Zeitraum</div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title" style="display:flex;align-items:center;gap:0;margin-bottom:14px">
+        <span id="chart-label">Yang pro Stunde</span>
+        <div class="chart-toggle">
+          <button class="chart-tab active" onclick="switchChart('yang', this)">Yang</button>
+          <button class="chart-tab"        onclick="switchChart('kopfgeld', this)">Kopfgelder</button>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="yangChart"></canvas>
+        <canvas id="kopfgeldChart" style="display:none"></canvas>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="items-split">
+        <!-- Linke Hälfte: Alle Items -->
+        <div class="items-half">
+          <div class="table-header">
+            <div class="card-title" style="margin:0">Items</div>
+            <input class="search-box" type="text" id="item-search" placeholder="Item suchen..." oninput="filterItems()">
+          </div>
+          <div class="item-cat-tabs">
+            <button class="item-cat-tab active" onclick="setItemFilter('alle',         this)">Alle</button>
+            <button class="item-cat-tab"        onclick="setItemFilter('legendaer',    this)" style="color:#f0c040">&#x2605; Legendär</button>
+            <button class="item-cat-tab"        onclick="setItemFilter('wertvoll',     this)" style="color:#a78bfa">&#x2726; Wertvoll</button>
+            <button class="item-cat-tab"        onclick="setItemFilter('selten',       this)" style="color:var(--gold2)">&#x25C6; Selten</button>
+            <button class="item-cat-tab"        onclick="setItemFilter('ungewoehnlich',this)" style="color:#4ade80">&#x25C6; Ungewöhnlich</button>
+            <button class="item-cat-tab"        onclick="setItemFilter('gewoehnlich',  this)" style="color:#9aa5b8">&#x25E6; Gewöhnlich</button>
+            <button class="item-cat-tab"        onclick="setItemFilter('unbekannt',    this)">? Neu</button>
+          </div>
+          <div class="items-list" id="items-list">
+            <div class="empty-state"><div class="empty-icon">&#x2697;&#xFE0F;</div><div>Lade Daten...</div></div>
+          </div>
+        </div>
+        <!-- Rechte Hälfte: Favoriten -->
+        <div class="items-half">
+          <div class="fav-header">&#x2B50; Favoriten</div>
+          <div class="fav-list" id="fav-list">
+            <div class="empty-state"><div class="empty-icon">&#x2B50;</div><div>Noch keine Favoriten.<br>Klicke ☆ neben einem Item.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<!-- Item-Edit Popup -->
+<div class="item-edit-overlay" id="item-edit-overlay" onclick="closeItemEdit()"></div>
+<div class="item-edit-popup" id="item-edit-popup" style="display:none">
+  <div class="item-edit-name" id="item-edit-name"></div>
+  <div class="item-edit-row">
+    <select class="item-cat-select" id="item-edit-cat">
+      <option value="">— Keine Kategorie —</option>
+      <option value="legendaer">★ Legendär</option>
+      <option value="wertvoll">✦ Wertvoll</option>
+      <option value="selten">◆ Selten</option>
+      <option value="ungewoehnlich">◆ Ungewöhnlich</option>
+      <option value="gewoehnlich">◦ Gewöhnlich</option>
+    </select>
+  </div>
+  <div style="margin-bottom:6px">
+    <label style="font-family:'Cinzel',serif;font-size:0.6rem;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;display:block;margin-bottom:5px">Yang-Wert (pro Stück)</label>
+    <input class="item-price-input" id="item-edit-price" type="number" min="0" placeholder="0">
+  </div>
+  <div class="item-edit-actions">
+    <button class="btn-cancel" onclick="closeItemEdit()" style="padding:5px 14px;font-size:0.65rem">Abbrechen</button>
+    <button class="btn-save"   onclick="saveItemEdit()"  style="padding:5px 14px;font-size:0.65rem">Speichern</button>
+  </div>
+</div>
+    <div class="feed-card">
+      <div class="card-title">Live Feed</div>
+      <div class="feed-list" id="feed-list">
+        <div class="empty-state"><div class="empty-icon">&#x1F52E;</div><div>Warte auf neue Drops...</div></div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+<!-- PAGE: KOPFGELDER -->
+<div id="page-kopfgelder" class="page">
+  <div class="subpage-content">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">&#x1F3AF; Kopfgelder</div>
+        <div class="stat-value bounty" id="kp-total">&#x2014;</div>
+        <div class="stat-sub" id="kp-sub">Im gewahlten Zeitraum</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">&#x23F0; Letztes Kopfgeld</div>
+        <div class="stat-value" id="kp-last" style="font-size:1.4rem">&#x2014;</div>
+        <div class="stat-sub" id="kp-last-abs">&#x2014;</div>
+        <div style="margin-top:12px"><button class="action-btn" onclick="undoLastKopfgeld()">&#x2715; Letztes rueckgaengig</button></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">&#x1F4B8; Gesamtkosten</div>
+        <div class="stat-value red" id="kp-cost">&#x2014;</div>
+        <div class="stat-sub" id="kp-cost-sub">Yang ausgegeben</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="chart-card" style="grid-area:unset">
+        <div class="card-title">
+          Kopfgelder nach Uhrzeit
+          <div class="chart-toggle">
+            <button class="chart-tab active" onclick="switchKopfChartMode('hour', this)">Stunden</button>
+            <button class="chart-tab"        onclick="switchKopfChartMode('day',  this)">Tage</button>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="kopfDetailChart"></canvas></div>
+      </div>
+      <div class="dungeon-table-card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span>Letzte Eintraege</span>
+          <div id="kopf-watcher-badge" style="font-size:0.62rem;font-family:'Cinzel',serif"></div>
+        </div>
+        <div class="kopf-entries" id="kopf-entries-list">
+          <div class="empty-state"><div class="empty-icon">&#x1F3AF;</div><div>Keine Eintraege</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: DUNGEONS -->
+<div id="page-dungeons" class="page">
+  <div class="subpage-content">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">&#x1F3F0; Runs gesamt</div>
+        <div class="stat-value dungeon" id="dg-runs">&#x2014;</div>
+        <div class="stat-sub" id="dg-runs-sub">Im gewahlten Zeitraum</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">&#x26A1; Runs / Stunde</div>
+        <div class="stat-value dungeon" id="dg-rph">&#x2014;</div>
+        <div class="stat-sub" id="dg-rph-sub">Aktive Dungeon-Zeit</div>
+        <div class="stat-sub2">&#x26DC; Yang / Stunde (Dungeons)</div>
+        <div class="stat-value-sm yang" id="dg-yang-ph">&#x2014;</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">&#x1F4B8; Kosten gesamt</div>
+        <div class="stat-value red" id="dg-cost">&#x2014;</div>
+        <div class="stat-sub" id="dg-avg-cost">&#x2014; Yang/Run</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">&#x1F4CA; Yang &minus; Kosten</div>
+        <div class="stat-value" id="dg-net">&#x2014;</div>
+        <div class="stat-sub" id="dg-net-sub">Yang verdient minus Kosten</div>
+      </div>
+    </div>
+    <div class="two-col-wide">
+      <div class="dungeon-table-card">
+        <div class="card-title">Dungeon-Aufschlusselung</div>
+        <div class="dungeon-row header-row">
+          <div>Dungeon</div><div style="text-align:center">Runs</div>
+          <div style="text-align:right">Kosten gesamt</div><div style="text-align:right">Ø Kosten/Run</div>
+        </div>
+        <div class="dungeon-rows" id="dungeon-breakdown">
+          <div class="empty-state"><div class="empty-icon">&#x1F3F0;</div><div>Keine Dungeon-Konfiguration</div></div>
+        </div>
+      </div>
+      <div class="chart-card" style="grid-area:unset">
+        <div class="card-title">Runs nach Uhrzeit</div>
+        <div class="chart-wrap"><canvas id="dungeonChart"></canvas></div>
+      </div>
+    </div>
+    <!-- Top Dungeons -->
+    <div class="dungeon-table-card" id="top-dungeons-section">
+      <div class="card-title">&#x1F3C6; Top Dungeons</div>
+      <div id="top-dungeons-list" style="display:flex;flex-direction:column;gap:6px">
+        <div class="empty-state" style="padding:20px"><div class="empty-icon">&#x1F3F0;</div><div>Keine Runs im Zeitraum</div></div>
+      </div>
+    </div>
+    <div id="dungeon-setup-hint" style="display:none">
+      <div style="background:rgba(46,134,222,0.06);border:1px solid rgba(46,134,222,0.2);border-radius:4px;padding:18px 22px;font-size:0.85rem;color:var(--muted);line-height:1.6">
+        <strong style="color:var(--dungeon);font-family:'Cinzel',serif;font-size:0.8rem">&#x1F3F0; Dungeons noch nicht konfiguriert</strong><br>
+        Oeffne die <button onclick="openSettings()" style="background:transparent;border:none;color:var(--gold);cursor:pointer;font-family:inherit;font-size:inherit;text-decoration:underline">Einstellungen</button>
+        und fuege Dungeon-Typen hinzu (Name, Kisten-Item, Kosten).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: PORTALE -->
+<div id="page-portale" class="page">
+  <div class="subpage-content">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:16px;color:var(--muted)">
+      <div style="font-size:3rem;opacity:0.4">&#x1F300;</div>
+      <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold-dim);letter-spacing:0.1em">PORTALE</div>
+      <div style="font-size:0.9rem;font-style:italic;text-align:center;max-width:400px;line-height:1.7">
+        Dieses Modul ist noch in Entwicklung.<br>
+        Portal-Tracking, Kosten und Statistiken folgen spaeter.
+      </div>
+      <div style="width:200px;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin-top:8px"></div>
+      <div style="font-size:0.75rem;color:var(--muted2);font-family:'Cinzel',serif;letter-spacing:0.15em">COMING SOON</div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="status-entries">&#x26DC; &#x2014; Eintraege</span>
+  <span id="status-dungeons">&#x1F3F0; &#x2014; Runs</span>
+  <span id="status-file">&#x1F4DC; &#x2014;</span>
+  <span id="status-time">&#x231B; &#x2014;</span>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentPeriod     = 'today';
+let currentPage       = 'dashboard';
+let allItems          = {};
+let yangChart         = null;
+let kopfgeldChart     = null;
+let kopfDetailChart   = null;
+let dungeonChart      = null;
+let activeChart       = 'yang';
+let kopfChartMode     = 'hour';
+let feedCount         = 0;
+const MAX_FEED        = 60;
+let lastKopfgeldTs    = null;
+let dungeonRows       = [];
+let autoSwitchBlocked = false;
+let autoSwitchTimer   = null;
+let favorites         = new Set(JSON.parse(localStorage.getItem('lootFavorites') || '[]'));
+
+// ── Icon System ──────────────────────────────────────────────────────────────
+let availableIcons = [];
+let iconMap        = {};
+async function loadIcons() {
+  try { const d = await (await fetch('/api/icons')).json(); availableIcons = d.icons||[]; iconMap = d.map||{}; } catch(_){}
+}
+function resolveIcon(name) {
+  if (iconMap[name]) return '/icons/' + encodeURIComponent(iconMap[name]);
+  const nl = name.toLowerCase();
+  for (const f of availableIcons) {
+    const s = f.replace(/\.[^.]+$/,'').toLowerCase();
+    if (s===nl || s===nl.replace(/\s+/g,'_')) return '/icons/'+encodeURIComponent(f);
+  }
+  return null;
+}
+function iconImg(name, cls) { const u=resolveIcon(name); return u?`<img src="${u}" class="${cls}" onerror="this.style.display='none'" alt="">`:''; }
+
+// ── Formatierung ─────────────────────────────────────────────────────────────
+function fmtNumber(n) {
+  if (n===null||n===undefined||isNaN(n)) return '—';
+  if (n<0) return '−'+fmtNumber(-n);
+  if (n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if (n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return n.toLocaleString('de-DE');
+}
+function fmtDuration(m) {
+  if (!m||m<1) return '—';
+  if (m<60) return m+' Min';
+  const h=Math.floor(m/60), r=m%60; return r?`${h}h ${r}Min`:`${h}h`;
+}
+function fmtRelTime(iso) {
+  if (!iso) return '—';
+  const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);
+  if (s<60) return `vor ${s}s`;
+  if (s<3600) return `vor ${Math.floor(s/60)}min`;
+  return `vor ${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}min`;
+}
+function fmtAbsTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Page Navigation ───────────────────────────────────────────────────────────
+function switchPage(page, btn, isAuto) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if (btn) btn.classList.add('active');
+  else { const f=document.querySelector('.page-tab[data-page="'+page+'"]'); if(f) f.classList.add('active'); }
+  if (!isAuto) {
+    autoSwitchBlocked = true;
+    clearTimeout(autoSwitchTimer);
+    autoSwitchTimer = setTimeout(() => { autoSwitchBlocked=false; }, 5*60*1000);
+  }
+  loadAllStats();
+}
+function autoSwitchToPage(page) {
+  if (autoSwitchBlocked || currentPage===page) return;
+  switchPage(page, null, true);
+}
+
+// ── Period Tabs ───────────────────────────────────────────────────────────────
+function setPeriod(p, btn) {
+  currentPeriod = p;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  loadAllStats();
+}
+
+// ── Stats laden ───────────────────────────────────────────────────────────────
+async function loadAllStats() {
+  try {
+    const [lr, kr, dr] = await Promise.all([
+      fetch('/api/stats/'+currentPeriod),
+      fetch('/api/kopfgelder/'+currentPeriod),
+      fetch('/api/dungeons/'+currentPeriod)
+    ]);
+    const loot=await lr.json(), kopf=await kr.json(), dung=await dr.json();
+    updateDashboard(loot, kopf, dung);
+    updateKopfgelderPage(kopf);
+    updateDungeonsPage(dung);
+  } catch(e) { console.error('Stats-Fehler:', e); }
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function updateDashboard(data, kopf, dung) {
+  document.getElementById('val-yang').textContent  = fmtNumber(data.total_yang)+' ¥';
+  document.getElementById('val-items').textContent = fmtNumber(data.total_items);
+  document.getElementById('sub-items').textContent = Object.keys(data.items||{}).length+' verschiedene Typen';
+  document.getElementById('val-rate').textContent  = fmtNumber(data.yang_per_hour)+' ¥/h';
+  if (data.session_start)
+    document.getElementById('sub-yang').textContent = (data.entry_count||0).toLocaleString('de-DE')+' Drop-Events · '+fmtDuration(data.session_duration_min);
+  const pb=document.getElementById('pause-badge');
+  if (data.pause_duration_min>0) { pb.style.display=''; pb.textContent='⏸ '+fmtDuration(data.pause_duration_min)+' Pause'; } else pb.style.display='none';
+  // Kopfgelder-Karte
+  document.getElementById('val-bounty').textContent  = kopf.total>0 ? kopf.total+'x' : '—';
+  document.getElementById('sub-bounty').textContent  = kopf.total===1?'Kopfgeld abgeschlossen':'Kopfgelder abgeschlossen';
+  document.getElementById('bounty-hint').style.display = kopf.watcher_active?'none':'';
+  if (kopf.last_timestamp_any) {
+    lastKopfgeldTs=kopf.last_timestamp_any;
+    document.getElementById('bounty-last').style.display='';
+    document.getElementById('bounty-last').textContent=fmtRelTime(kopf.last_timestamp_any);
+  } else document.getElementById('bounty-last').style.display='none';
+  // Dungeon-Karte
+  const dc=data.dungeon_count||0;
+  document.getElementById('val-dungeon').textContent = dc>0?dc+'x':'—';
+  document.getElementById('sub-dungeon').textContent = dc>0&&dung.runs_per_hour>0?dung.runs_per_hour+' Runs/h':'Im gewählten Zeitraum';
+  updateChart(data.yang_timeline||[]);
+  if (activeChart==='kopfgeld') updateKopfgeldDashChart(kopf.timeline_hour||[]);
+  allItems=data.items||{};
+  renderItems(allItems);
+  renderFavorites();
+}
+
+// ── Yang Chart ────────────────────────────────────────────────────────────────
+function updateChart(tl) {
+  const labels=tl.map(d=>d.hour), values=tl.map(d=>d.yang);
+  if (yangChart) { yangChart.data.labels=labels; yangChart.data.datasets[0].data=values; yangChart.update('active'); return; }
+  const ctx=document.getElementById('yangChart').getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,175); g.addColorStop(0,'rgba(79,156,249,0.35)'); g.addColorStop(1,'rgba(79,156,249,0.02)');
+  yangChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Yang',data:values,backgroundColor:g,borderColor:'#4f9cf9',borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#111827',borderColor:'#2a3a5c',borderWidth:1,titleColor:'#7eb8ff',bodyColor:'#e2e8f0',callbacks:{label:c=>'  '+c.parsed.y.toLocaleString('de-DE')+' Yang'}}},scales:{x:{ticks:{color:'#4a5f80',font:{size:10},maxRotation:45},grid:{color:'#1a2236'}},y:{ticks:{color:'#4a5f80',font:{size:10},callback:v=>fmtNumber(v)},grid:{color:'#1a2236'}}}}});
+}
+function updateKopfgeldDashChart(tl) {
+  const labels=tl.map(d=>d.hour), values=tl.map(d=>d.count);
+  if (kopfgeldChart) { kopfgeldChart.data.labels=labels; kopfgeldChart.data.datasets[0].data=values; kopfgeldChart.update('active'); return; }
+  const ctx=document.getElementById('kopfgeldChart').getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,175); g.addColorStop(0,'rgba(155,89,210,0.4)'); g.addColorStop(1,'rgba(155,89,210,0.02)');
+  kopfgeldChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Kopfgelder',data:values,backgroundColor:g,borderColor:'#9b59d2',borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1208',borderColor:'#3a2810',borderWidth:1,titleColor:'#9b59d2',bodyColor:'#e8d5a8',callbacks:{label:c=>'  '+c.parsed.y+' Kopfgeld(er)'}}},scales:{x:{ticks:{color:'#4a5f80',font:{size:10}},grid:{color:'#1a2236'}},y:{ticks:{color:'#4a5f80',font:{size:10},stepSize:1},grid:{color:'#1a2236'},beginAtZero:true}}}});
+}
+function switchChart(type, btn) {
+  activeChart=type;
+  document.querySelectorAll('.chart-toggle .chart-tab').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const yc=document.getElementById('yangChart'), kc=document.getElementById('kopfgeldChart');
+  if (type==='yang') { yc.style.display=''; kc.style.display='none'; document.getElementById('chart-label').textContent='Yang pro Stunde'; }
+  else { yc.style.display='none'; kc.style.display=''; document.getElementById('chart-label').textContent='Kopfgelder nach Uhrzeit'; loadAllStats(); }
+}
+
+// ── Kopfgelder-Seite ──────────────────────────────────────────────────────────
+function updateKopfgelderPage(kopf) {
+  document.getElementById('kp-total').textContent    = kopf.total>0?kopf.total+'x':'—';
+  document.getElementById('kp-sub').textContent      = kopf.total===1?'Kopfgeld':'Kopfgelder';
+  if (kopf.last_timestamp_any) {
+    lastKopfgeldTs=kopf.last_timestamp_any;
+    document.getElementById('kp-last').textContent    = fmtRelTime(kopf.last_timestamp_any);
+    document.getElementById('kp-last-abs').textContent= fmtAbsTime(kopf.last_timestamp_any);
+  } else { document.getElementById('kp-last').textContent='—'; document.getElementById('kp-last-abs').textContent='Noch kein Kopfgeld'; }
+  document.getElementById('kp-cost').textContent     = kopf.total_cost>0?fmtNumber(kopf.total_cost)+' ¥':'—';
+  document.getElementById('kp-cost-sub').textContent = kopf.total>0?kopf.total+' × '+fmtNumber(kopf.kopfgeld_cost)+' ¥':'Yang ausgegeben';
+  document.getElementById('kopf-watcher-badge').textContent = kopf.watcher_active?'🟢 OCR aktiv':'🔴 OCR inaktiv';
+  document.getElementById('kopf-watcher-badge').style.color = kopf.watcher_active?'var(--green)':'var(--red)';
+  updateKopfDetailChart(kopf);
+  const list=document.getElementById('kopf-entries-list');
+  if (!kopf.total) { list.innerHTML='<div class="empty-state"><div class="empty-icon">🎯</div><div>Keine Eintraege im Zeitraum</div></div>'; return; }
+  list.innerHTML=(kopf.timeline_hour||[]).slice().reverse().map(d=>{
+    const cost=kopf.kopfgeld_cost*d.count;
+    return `<div class="kopf-entry"><span class="ke-time">${escHtml(d.hour)}</span><span class="ke-label">🎯 ${d.count}× abgeschlossen</span>${cost>0?`<span class="ke-cost">−${fmtNumber(cost)} ¥</span>`:''}</div>`;
+  }).join('');
+}
+function updateKopfDetailChart(kopf) {
+  const src=kopfChartMode==='hour'?kopf.timeline_hour:kopf.timeline;
+  const labels=(src||[]).map(d=>kopfChartMode==='hour'?d.hour:d.day);
+  const values=(src||[]).map(d=>d.count);
+  if (kopfDetailChart) { kopfDetailChart.data.labels=labels; kopfDetailChart.data.datasets[0].data=values; kopfDetailChart.update('active'); return; }
+  const ctx=document.getElementById('kopfDetailChart').getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,175); g.addColorStop(0,'rgba(155,89,210,0.4)'); g.addColorStop(1,'rgba(155,89,210,0.02)');
+  kopfDetailChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Kopfgelder',data:values,backgroundColor:g,borderColor:'#9b59d2',borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1208',borderColor:'#3a2810',borderWidth:1,titleColor:'#9b59d2',bodyColor:'#e8d5a8',callbacks:{label:c=>'  '+c.parsed.y+' Kopfgeld(er)'}}},scales:{x:{ticks:{color:'#4a5f80',font:{size:10}},grid:{color:'#1a2236'}},y:{ticks:{color:'#4a5f80',font:{size:10},stepSize:1},grid:{color:'#1a2236'},beginAtZero:true}}}});
+}
+function switchKopfChartMode(mode, btn) {
+  kopfChartMode=mode;
+  document.querySelectorAll('#page-kopfgelder .chart-tab').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(kopfDetailChart){kopfDetailChart.destroy();kopfDetailChart=null;}
+  loadAllStats();
+}
+
+// ── Kopfgeld rückgängig ───────────────────────────────────────────────────────
+setInterval(()=>{ const el=document.getElementById('kp-last'); if(lastKopfgeldTs&&el) el.textContent=fmtRelTime(lastKopfgeldTs); }, 1000);
+setInterval(()=>{ const el=document.getElementById('bounty-last'); if(lastKopfgeldTs&&el&&el.style.display!=='none') el.textContent=fmtRelTime(lastKopfgeldTs); }, 1000);
+async function undoLastKopfgeld() {
+  try { const r=await fetch('/api/kopfgelder/last',{method:'DELETE'}); if((await r.json()).ok){lastKopfgeldTs=null;loadAllStats();} } catch(_){}
+}
+
+// ── Dungeons-Seite ────────────────────────────────────────────────────────────
+function updateDungeonsPage(dung) {
+  const noCfg=!dung.configured_dungeons||dung.configured_dungeons.length===0;
+  document.getElementById('dungeon-setup-hint').style.display=noCfg?'':'none';
+  document.getElementById('dg-runs').textContent     = dung.total_runs>0?dung.total_runs+'x':'—';
+  document.getElementById('dg-runs-sub').textContent = dung.total_runs>0?'Im gewählten Zeitraum':'Keine Runs erkannt';
+  document.getElementById('dg-rph').textContent      = dung.total_runs>0?dung.runs_per_hour:'—';
+  document.getElementById('dg-rph-sub').textContent  = dung.dungeon_active_min>1?'Aktive Zeit: '+fmtDuration(dung.dungeon_active_min):'Aktive Dungeon-Zeit';
+  document.getElementById('dg-yang-ph').textContent  = dung.yang_per_hour_dungeon>0?fmtNumber(dung.yang_per_hour_dungeon)+' ¥/h':'—';
+  document.getElementById('dg-cost').textContent     = dung.total_cost>0?fmtNumber(dung.total_cost)+' ¥':'—';
+  document.getElementById('dg-avg-cost').textContent = dung.avg_cost_per_run>0?fmtNumber(dung.avg_cost_per_run)+' ¥ pro Run':'Kein Kosteneintrag';
+  const net=dung.net_profit||0, netEl=document.getElementById('dg-net');
+  netEl.textContent = dung.total_runs>0?(net>=0?'+':'')+fmtNumber(net)+' ¥':'—';
+  netEl.className   = 'stat-value '+(net>=0?'green':'red');
+  // Breakdown
+  const bd=document.getElementById('dungeon-breakdown');
+  if (!dung.by_dungeon||!dung.by_dungeon.length) {
+    bd.innerHTML=noCfg?'<div class="empty-state" style="padding:20px"><div class="empty-icon">🏰</div><div>Dungeons in Einstellungen konfigurieren</div></div>':'<div class="empty-state" style="padding:20px"><div class="empty-icon">📭</div><div>Keine Runs im Zeitraum</div></div>';
+  } else {
+    bd.innerHTML=dung.by_dungeon.map(d=>`<div class="dungeon-row"><div class="dn-name">🏰 ${escHtml(d.name)}</div><div class="dn-runs">${d.runs}×</div><div class="dn-cost">${d.cost>0?'−'+fmtNumber(d.cost)+' ¥':'—'}</div><div class="dn-avg">${d.runs>0&&d.cost>0?fmtNumber(Math.round(d.cost/d.runs))+' ¥':'—'}</div></div>`).join('');
+  }
+  // Top Dungeons
+  renderTopDungeons(dung.by_dungeon||[]);
+  updateDungeonChart(dung.timeline_hour||[]);
+}
+function renderTopDungeons(byDungeon) {
+  const el=document.getElementById('top-dungeons-list');
+  if (!byDungeon||!byDungeon.length) { el.innerHTML='<div class="empty-state" style="padding:20px"><div class="empty-icon">🏰</div><div>Keine Runs im Zeitraum</div></div>'; return; }
+  const sorted=[...byDungeon].sort((a,b)=>b.runs-a.runs);
+  const maxR=sorted[0].runs||1;
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=sorted.map((d,i)=>{
+    const pct=Math.round((d.runs/maxR)*100);
+    const iconUrl=resolveIcon(d.name);
+    const iconHtml=iconUrl?`<img src="${iconUrl}" style="width:28px;height:28px;object-fit:contain;image-rendering:pixelated;flex-shrink:0" onerror="this.style.display='none'" alt="">`:'<span style="font-size:1.1rem">🏰</span>';
+    const medal=medals[i]||`<span style="color:var(--muted);font-family:'Cinzel',serif;font-size:0.75rem">#${i+1}</span>`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface3);border-radius:3px;border:1px solid transparent;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--border)'" onmouseout="this.style.borderColor='transparent'">
+      <div style="width:22px;text-align:center;flex-shrink:0">${medal}</div>
+      ${iconHtml}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.88rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(d.name)}</div>
+        <div style="height:3px;background:var(--border);border-radius:1px;margin-top:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--dungeon),#5ab4ff);border-radius:1px;transition:width 0.4s ease"></div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--dungeon)">${d.runs}×</div>
+        ${d.cost>0?`<div style="font-size:0.72rem;color:var(--red)">−${fmtNumber(d.cost)} ¥</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function updateDungeonChart(tl) {
+  const labels=tl.map(d=>d.hour), values=tl.map(d=>d.count);
+  if (dungeonChart) { dungeonChart.data.labels=labels; dungeonChart.data.datasets[0].data=values; dungeonChart.update('active'); return; }
+  const ctx=document.getElementById('dungeonChart').getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,175); g.addColorStop(0,'rgba(46,134,222,0.4)'); g.addColorStop(1,'rgba(46,134,222,0.02)');
+  dungeonChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Runs',data:values,backgroundColor:g,borderColor:'#2e86de',borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1208',borderColor:'#3a2810',borderWidth:1,titleColor:'#2e86de',bodyColor:'#e8d5a8',callbacks:{label:c=>'  '+c.parsed.y+' Run(s)'}}},scales:{x:{ticks:{color:'#4a5f80',font:{size:10}},grid:{color:'#1a2236'}},y:{ticks:{color:'#4a5f80',font:{size:10},stepSize:1},grid:{color:'#1a2236'},beginAtZero:true}}}});
+}
+
+// ── Items Liste ───────────────────────────────────────────────────────────────
+let itemCfg = {};
+let itemFilter = 'alle';
+
+async function loadItemConfig() {
+  try { itemCfg = await (await fetch('/api/item_config')).json(); } catch(_) { itemCfg = {}; }
+}
+
+function setItemFilter(f, btn) {
+  itemFilter = f;
+  document.querySelectorAll('.item-cat-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderItems(allItems);
+}
+
+function fmtYang(v) {
+  if (!v || v <= 0) return '';
+  if (v >= 1000000) return (v/1000000).toFixed(1).replace('.0','') + 'M';
+  if (v >= 1000)    return Math.round(v/1000) + 'k';
+  return v.toLocaleString('de-DE');
+}
+
+function renderItems(items) {
+  const list = document.getElementById('items-list');
+  const q    = document.getElementById('item-search').value.toLowerCase();
+
+  let entries = Object.entries(items).filter(([n]) => n !== 'Yang' && n.toLowerCase().includes(q));
+
+  // Kategorie-Filter
+  if (itemFilter !== 'alle') {
+    entries = entries.filter(([name]) => {
+      const cat = (itemCfg[name] || {}).category || '';
+      if (itemFilter === 'unbekannt') return !cat;
+      return cat === itemFilter;
+    });
+  }
+
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div>Keine Items in dieser Kategorie</div></div>';
+    return;
+  }
+
+  // Sortierung: Seltenheit zuerst, dann nach Gesamtwert, dann nach count
+  entries.sort(([an, ac], [bn, bc]) => {
+    const acat = (itemCfg[an] || {}).category || '';
+    const bcat = (itemCfg[bn] || {}).category || '';
+    const aPrice = (itemCfg[an] || {}).price || 0;
+    const bPrice = (itemCfg[bn] || {}).price || 0;
+    const catOrder = {legendaer:0, wertvoll:1, selten:2, ungewoehnlich:3, gewoehnlich:4, '':5};
+    if (catOrder[acat] !== catOrder[bcat]) return catOrder[acat] - catOrder[bcat];
+    const aTotal = aPrice * ac, bTotal = bPrice * bc;
+    if (aTotal !== bTotal) return bTotal - aTotal;
+    return bc - ac;
+  });
+
+  const mx = entries.reduce((m,[,c]) => Math.max(m, c), 1);
+
+  const BADGE_LABEL = {
+    legendaer:    '★ Legendär',
+    wertvoll:     '✦ Wertvoll',
+    selten:       '◆ Selten',
+    ungewoehnlich:'◆ Ungewöhnlich',
+    gewoehnlich:  '◦ Gewöhnlich',
+  };
+  const BAR_COLOR = {
+    legendaer:    '#f0c040',
+    wertvoll:     '#a78bfa',
+    selten:       'var(--gold2)',
+    ungewoehnlich:'#4ade80',
+    gewoehnlich:  '#4a5f80',
+    '':           'var(--border2)',
+  };
+  const ROW_CLASS = {legendaer:'legendaer', wertvoll:'wertvoll'};
+
+  list.innerHTML = entries.map(([name, count]) => {
+    const cfg   = itemCfg[name] || {};
+    const cat   = cfg.category || '';
+    const price = cfg.price || 0;
+    const pct   = Math.round((count / mx) * 100);
+    const badge = cat && BADGE_LABEL[cat]
+      ? `<span class="item-badge ${cat}">${BADGE_LABEL[cat]}</span>` : '';
+    const priceTag = price > 0 ? `<span class="item-price">${fmtYang(price * count)}</span>` : '';
+    const barCol   = BAR_COLOR[cat] || BAR_COLOR[''];
+    const rowCls   = ROW_CLASS[cat] || '';
+    const isFav = favorites.has(name);
+    return `<div class="item-row ${rowCls}" data-item="${escHtml(name)}">
+      <span class="item-name">${iconImg(name,'item-icon')}${escHtml(name)}</span>
+      ${badge}${priceTag}
+      <div class="item-bar-wrap"><div class="item-bar" style="width:${pct}%;background:${barCol}"></div></div>
+      <span class="item-count">${count.toLocaleString('de-DE')}</span>
+      <button class="fav-btn${isFav?' active':''}" title="${isFav?'Aus Favoriten entfernen':'Zu Favoriten hinzufügen'}" onclick="toggleFavorite('${escHtml(name).replace(/'/g,"\\'")}',this)">&#x2B50;</button>
+      <button class="item-edit-btn" onclick="openItemEdit(event,'${escHtml(name).replace(/'/g,"\\'")}')">Edit</button>
+    </div>`;
+  }).join('');
+}
+
+function filterItems() { renderItems(allItems); }
+
+// ── Favoriten ─────────────────────────────────────────────────────────────────
+function toggleFavorite(name, btn) {
+  if (favorites.has(name)) {
+    favorites.delete(name);
+    btn.classList.remove('active');
+    btn.title = 'Zu Favoriten hinzufügen';
+  } else {
+    favorites.add(name);
+    btn.classList.add('active');
+    btn.title = 'Aus Favoriten entfernen';
+  }
+  localStorage.setItem('lootFavorites', JSON.stringify([...favorites]));
+  renderFavorites();
+}
+
+function renderFavorites() {
+  const list = document.getElementById('fav-list');
+  const favItems = [...favorites].filter(n => allItems[n] !== undefined);
+
+  if (!favItems.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#x2B50;</div><div>Noch keine Favoriten.<br>Klicke ☆ neben einem Item.</div></div>';
+    return;
+  }
+
+  const BADGE_LABEL = {legendaer:'★ Legendär',wertvoll:'✦ Wertvoll',selten:'◆ Selten',ungewoehnlich:'◆ Ungewöhnlich',gewoehnlich:'◦ Gewöhnlich'};
+
+  list.innerHTML = favItems.map(name => {
+    const count = allItems[name] || 0;
+    const cfg   = itemCfg[name] || {};
+    const cat   = cfg.category || '';
+    const badge = cat && BADGE_LABEL[cat] ? `<span class="item-badge ${cat}">${BADGE_LABEL[cat]}</span>` : '';
+    return `<div class="item-row" data-item="${escHtml(name)}">
+      <span class="item-name">${iconImg(name,'item-icon')}${escHtml(name)}</span>
+      ${badge}
+      <span class="item-count" style="margin-left:auto">${count.toLocaleString('de-DE')}</span>
+      <button class="fav-btn active" title="Aus Favoriten entfernen" onclick="toggleFavorite('${escHtml(name).replace(/'/g,"\\'")}',this);renderItems(allItems)">&#x2B50;</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Desktop-Benachrichtigungen ────────────────────────────────────────────────
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function notifyFavoriteItem(name, count) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const icon = resolveIcon(name) || '';
+  new Notification('⭐ Favorisiertes Item erhalten!', {
+    body: `${name} – jetzt insgesamt ${count.toLocaleString('de-DE')}x`,
+    icon
+  });
+}
+
+// ── Update-Check in Einstellungen ─────────────────────────────────────────────
+async function checkForUpdates() {
+  const btn    = document.getElementById('update-check-btn');
+  const result = document.getElementById('update-result');
+
+  // Aktuelle Version anzeigen
+  try {
+    const vd = await (await fetch('/api/version')).json();
+    document.getElementById('current-version-display').textContent = vd.version || '—';
+  } catch(_) {}
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Prüfe...';
+  result.textContent = '';
+
+  try {
+    const [ghRes, vRes] = await Promise.all([
+      fetch('/api/check_update', {cache:'no-store'}),
+      fetch('/api/version')
+    ]);
+    const gh    = await ghRes.json();
+    const vd    = await vRes.json();
+    const local = vd.version || 'v0.0';
+    document.getElementById('current-version-display').textContent = local;
+
+    if (gh.error) {
+      result.style.color = 'var(--red)';
+      result.textContent = '✗ GitHub-Fehler: ' + gh.error;
+    } else if (gh.tag_name === local) {
+      result.style.color = 'var(--green)';
+      result.textContent = `✓ Du hast die neueste Version (${local})`;
+    } else {
+      result.style.color = 'var(--gold2)';
+      result.innerHTML   = `🆕 Neue Version verfügbar: <strong>${gh.tag_name}</strong>`;
+    }
+  } catch(e) {
+    result.style.color = 'var(--red)';
+    result.textContent = '✗ Verbindungsfehler';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔄 Jetzt prüfen';
+}
+
+// ── Item-Edit Popup ───────────────────────────────────────────────────────────
+let _editingItem = null;
+
+function openItemEdit(e, name) {
+  e.stopPropagation();
+  _editingItem = name;
+  const cfg = itemCfg[name] || {};
+  document.getElementById('item-edit-name').textContent = name;
+  document.getElementById('item-edit-cat').value   = cfg.category || '';
+  document.getElementById('item-edit-price').value = cfg.price    || 0;
+  const popup = document.getElementById('item-edit-popup');
+  const overlay = document.getElementById('item-edit-overlay');
+  popup.style.display = 'block';
+  overlay.classList.add('open');
+  // Popup neben Mausklick positionieren
+  const x = Math.min(e.clientX, window.innerWidth - 340);
+  const y = Math.min(e.clientY + 8, window.innerHeight - 200);
+  popup.style.left = x + 'px';
+  popup.style.top  = y + 'px';
+}
+
+function closeItemEdit() {
+  document.getElementById('item-edit-popup').style.display = 'none';
+  document.getElementById('item-edit-overlay').classList.remove('open');
+  _editingItem = null;
+}
+
+async function saveItemEdit() {
+  if (!_editingItem) return;
+  const cat   = document.getElementById('item-edit-cat').value;
+  const price = parseInt(document.getElementById('item-edit-price').value) || 0;
+  if (cat) itemCfg[_editingItem] = { category: cat, price };
+  else     delete itemCfg[_editingItem];
+  try {
+    await fetch('/api/item_config', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(itemCfg)
+    });
+  } catch(_) {}
+  closeItemEdit();
+  renderItems(allItems);
+}
+
+// ── Live Feed ─────────────────────────────────────────────────────────────────
+function _addFeedDiv(div) {
+  const feed=document.getElementById('feed-list');
+  if (feedCount===0) feed.innerHTML='';
+  feed.insertBefore(div, feed.firstChild);
+  feedCount++;
+  while(feed.children.length>MAX_FEED) feed.removeChild(feed.lastChild);
+}
+function addFeedEntry(e) {
+  const t=new Date(e.timestamp).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const d=document.createElement('div');
+  d.className='feed-item'+(e.item==='Yang'?' yang-entry':'');
+  d.innerHTML=`<span class="feed-time">${t}</span><span class="feed-amount">+${e.amount.toLocaleString('de-DE')}</span><span>${iconImg(e.item,'feed-icon')}${escHtml(e.item)}</span>`;
+  _addFeedDiv(d);
+  // Benachrichtigung wenn favorisiertes Item gedroppt wurde
+  if (e.item !== 'Yang' && favorites.has(e.item)) {
+    notifyFavoriteItem(e.item, (allItems[e.item] || 0) + e.amount);
+  }
+}
+function addKopfgeldFeedEntry(e) {
+  const t=new Date(e.timestamp).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const d=document.createElement('div');
+  d.className='feed-item bounty-entry';
+  d.innerHTML=`<span class="feed-time">${t}</span><span class="feed-amount">🎯</span><span style="color:var(--bounty);font-weight:600">Alle Kopfgelder abgeschlossen!</span>`;
+  _addFeedDiv(d);
+}
+function addDungeonFeedEntry(e) {
+  const t=new Date(e.timestamp).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const d=document.createElement('div');
+  d.className='feed-item dungeon-entry';
+  d.innerHTML=`<span class="feed-time">${t}</span><span class="feed-amount">🏰</span><span style="color:var(--dungeon);font-weight:600">${escHtml(e.dungeon_name)} abgeschlossen!</span>`;
+  _addFeedDiv(d);
+}
+
+
+
+// ── Einstellungen Modal ───────────────────────────────────────────────────────
+function switchSettingsTab(name, btn) {
+  document.querySelectorAll('.modal-tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('stab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+async function openSettings() {
+  try {
+    const d = await (await fetch('/api/config')).json();
+    document.getElementById('cfg-logpath').value          = d.log_file || '';
+    document.getElementById('cfg-kopfgeld-cost').value    = d.kopfgeld_cost || 0;
+    document.getElementById('cfg-pause-threshold').value  = d.pause_threshold_min ?? 3;
+    renderDungeonCfgList(d.dungeons || []);
+    await loadMonitors(d.monitor_index || 0);
+    document.getElementById('cfg-chat-top').value    = d.chat_top    ?? 0.62;
+    document.getElementById('cfg-chat-bottom').value = d.chat_bottom ?? 1.0;
+    document.getElementById('cfg-chat-left').value   = d.chat_left   ?? 0.25;
+    document.getElementById('cfg-chat-right').value  = d.chat_right  ?? 0.75;
+    document.getElementById('cfg-tesseract-path').value = d.tesseract_path || '';
+    const badge = document.getElementById('ocr-status-badge');
+    if (badge) {
+      badge.textContent = d.ocr_available ? 'aktiv' : 'inaktiv';
+      badge.className = 'modal-tab-badge ' + (d.ocr_available ? 'ok' : 'warn');
+    }
+    checkPath();
+  } catch(_) {}
+  document.getElementById('settings-overlay').classList.add('open');
+}
+async function loadMonitors(selectIndex) {
+  const sel = document.getElementById('cfg-monitor');
+  try {
+    const d = await (await fetch('/api/monitors')).json();
+    sel.innerHTML = '<option value="0">🖥️ Spielfenster automatisch suchen</option>';
+    (d.monitors || []).forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.index;
+      opt.textContent = '🖥️ ' + m.label;
+      sel.appendChild(opt);
+    });
+    if (selectIndex !== undefined) sel.value = selectIndex;
+  } catch(_) {
+    sel.innerHTML = '<option value="0">🖥️ Spielfenster automatisch suchen</option>';
+  }
+}
+
+async function checkTesseract() {
+  const p = document.getElementById('cfg-tesseract-path').value.trim();
+  const hint = document.getElementById('tesseract-hint');
+  hint.style.color = 'var(--muted)'; hint.textContent = 'Prüfe...';
+  try {
+    const d = await (await fetch('/api/tesseract_check', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({path: p})
+    })).json();
+    if (d.ok) { hint.style.color='var(--green)'; hint.textContent='✓ Gefunden: '+d.path+' (v'+d.version+')'; }
+    else       { hint.style.color='var(--red)';   hint.textContent='✗ Nicht gefunden an diesem Pfad.'; }
+  } catch(_) { hint.style.color='var(--red)'; hint.textContent='Verbindungsfehler'; }
+}
+
+async function debugOcr() {
+  const res = document.getElementById('ocr-test-result');
+  res.style.color = 'var(--muted)';
+  res.textContent = 'Diagnose läuft...';
+  try {
+    const d = await (await fetch('/api/ocr_debug')).json();
+    let out = 'OCR: ' + (d.ocr_available ? '✓ aktiv' : '✗ inaktiv') + ' | EXE: ' + (d.frozen ? 'ja' : 'nein') + '\n';
+    for (const c of d.checks) {
+      if (c.path !== undefined)    out += (c.exists ? '✓' : '✗') + ' ' + c.path + '\n';
+      if (c.package !== undefined) out += (c.status === 'ok' ? '✓' : '✗') + ' Paket: ' + c.package + (c.status !== 'ok' ? ' → ' + c.status : '') + '\n';
+    }
+    res.style.color = d.ocr_available ? 'var(--green)' : 'var(--red)';
+    res.style.whiteSpace = 'pre';
+    res.textContent = out;
+  } catch(e) { res.style.color='var(--red)'; res.textContent='Verbindungsfehler: '+e; }
+}
+
+async function testOcr() {
+  const btn = document.querySelector('button[onclick="testOcr()"]');
+  const res = document.getElementById('ocr-test-result');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Scanne...'; }
+  res.style.color = 'var(--muted)';
+  res.textContent = 'Scanne Spielfenster...';
+  try {
+    const r = await fetch('/api/ocr_test', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        chat_top:    parseFloat(document.getElementById('cfg-chat-top').value)    || 0.62,
+        chat_left:   parseFloat(document.getElementById('cfg-chat-left').value)   || 0.25,
+        chat_right:  parseFloat(document.getElementById('cfg-chat-right').value)  || 0.75,
+        chat_bottom:      parseFloat(document.getElementById('cfg-chat-bottom').value) || 1.0,
+        tesseract_path:   document.getElementById('cfg-tesseract-path').value.trim(),
+        monitor_index:    parseInt(document.getElementById('cfg-monitor').value) || 0,
+      })
+    });
+    const d = await r.json();
+    // Vorschaubild anzeigen
+    let preview = document.getElementById('ocr-preview-img');
+    if (!preview) {
+      preview = document.createElement('img');
+      preview.id = 'ocr-preview-img';
+      preview.style.cssText = 'width:100%;margin-top:8px;border:1px solid var(--border);border-radius:4px;display:none';
+      res.parentNode.insertBefore(preview, res.nextSibling);
+    }
+    if (d.preview) { preview.src='data:image/png;base64,'+d.preview; preview.style.display=''; }
+    else { preview.style.display='none'; }
+    if (d.error) { res.style.color='var(--red)'; res.textContent='Fehler: '+d.error; }
+    else if (d.text) { res.style.color='var(--green)'; res.textContent='✓ Erkannter Text: '+d.text.substring(0,200); }
+    else { res.style.color='var(--yellow,#f0a500)'; res.textContent='⚠ Kein Text erkannt – Vorschau prüfen und Werte anpassen'; }
+  } catch(_) { res.style.color='var(--red)'; res.textContent='Verbindungsfehler'; }
+  if (btn) { btn.disabled = false; btn.textContent = '🔍 OCR-Region testen'; }
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+function overlayClick(e) {
+  if (e.target === e.currentTarget) closeSettings();
+}
+function zoneOverlayClick(e) {
+  if (e.target === e.currentTarget) closeZoneModal();
+}
+async function checkPath() {
+  const path = document.getElementById('cfg-logpath').value.trim();
+  const hint = document.getElementById('cfg-hint');
+  if (!path) { hint.textContent = ''; return; }
+  try {
+    const d = await (await fetch('/api/validate_log', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({path})
+    })).json();
+    if (d.valid) {
+      hint.style.color = 'var(--green)';
+      hint.textContent = 'Gueltige Log-Datei (' + d.matches + ' Treffer)';
+    } else {
+      hint.style.color = 'var(--red)';
+      const r = {empty:'Leer', not_found:'Datei nicht gefunden', no_matches:'Keine Loot-Eintraege', read_error:'Lesefehler'};
+      hint.textContent = '(x) ' + (r[d.reason] || d.reason);
+    }
+  } catch(_) {}
+}
+async function browseFile() {
+  try {
+    const p = await window.pywebview.api.browse_log_file();
+    if (p) { document.getElementById('cfg-logpath').value = p; checkPath(); }
+  } catch(_) {}
+}
+function renderDungeonCfgList(dungeons) {
+  const list = document.getElementById('dungeon-cfg-list');
+  list.innerHTML = dungeons.map((d, i) =>
+    '<div style="display:grid;grid-template-columns:1fr 1fr 110px 28px;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid var(--border)">' +
+    '<input class="modal-input dg-name" style="margin:0;padding:3px 7px;font-size:0.8rem" value="' + escHtml(d.name||'') + '" placeholder="Name">' +
+    '<input class="modal-input dg-item" style="margin:0;padding:3px 7px;font-size:0.8rem" value="' + escHtml(d.chest_item||'') + '" placeholder="Kisten-Item">' +
+    '<input class="modal-input dg-cost" style="margin:0;padding:3px 7px;font-size:0.8rem;text-align:right" type="number" value="' + (d.cost||0) + '" placeholder="0">' +
+    '<button onclick="removeDungeonRow(' + i + ')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:1rem;padding:0">x</button>' +
+    '</div>'
+  ).join('');
+}
+function addDungeonRow() {
+  const list = document.getElementById('dungeon-cfg-list');
+  const i = list.children.length;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 110px 28px;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid var(--border)';
+  div.innerHTML = '<input class="modal-input dg-name" style="margin:0;padding:3px 7px;font-size:0.8rem" placeholder="Name">' +
+    '<input class="modal-input dg-item" style="margin:0;padding:3px 7px;font-size:0.8rem" placeholder="Kisten-Item">' +
+    '<input class="modal-input dg-cost" style="margin:0;padding:3px 7px;font-size:0.8rem;text-align:right" type="number" value="0">' +
+    '<button onclick="removeDungeonRow(' + i + ')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:1rem;padding:0">x</button>';
+  list.appendChild(div);
+}
+function removeDungeonRow(i) {
+  const list = document.getElementById('dungeon-cfg-list');
+  if (list.children[i]) list.children[i].remove();
+  [...list.children].forEach((row, idx) => {
+    const btn = row.querySelector('button');
+    if (btn) btn.setAttribute('onclick', 'removeDungeonRow(' + idx + ')');
+  });
+}
+async function saveSettings() {
+  const btn = document.getElementById('cfg-save-btn');
+  btn.disabled = true; btn.textContent = 'Speichern...';
+  try {
+    const logFile = document.getElementById('cfg-logpath').value.trim();
+    const kpCost  = parseInt(document.getElementById('cfg-kopfgeld-cost').value) || 0;
+    const rows    = document.querySelectorAll('#dungeon-cfg-list > div');
+    const dungeons = [...rows].map(r => ({
+      name:       (r.querySelector('.dg-name') ? r.querySelector('.dg-name').value.trim() : ''),
+      chest_item: (r.querySelector('.dg-item') ? r.querySelector('.dg-item').value.trim() : ''),
+      cost:       parseInt(r.querySelector('.dg-cost') ? r.querySelector('.dg-cost').value : 0) || 0,
+    })).filter(d => d.name && d.chest_item);
+    await fetch('/api/config', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        log_file:           logFile,
+        kopfgeld_cost:      kpCost,
+        pause_threshold_min: parseInt(document.getElementById('cfg-pause-threshold').value) || 3,
+        dungeons,
+        chat_top:           parseFloat(document.getElementById('cfg-chat-top').value)    || 0.62,
+        chat_left:          parseFloat(document.getElementById('cfg-chat-left').value)   || 0.25,
+        chat_right:         parseFloat(document.getElementById('cfg-chat-right').value)  || 0.75,
+        chat_bottom:        parseFloat(document.getElementById('cfg-chat-bottom').value) || 1.0,
+        tesseract_path:     document.getElementById('cfg-tesseract-path').value.trim(),
+        monitor_index:      parseInt(document.getElementById('cfg-monitor').value) || 0,
+      })
+    });
+    closeSettings();
+    loadAllStats();
+  } catch(_) {}
+  btn.disabled = false; btn.textContent = 'Speichern';
+}
+
+// ── Status Bar ────────────────────────────────────────────────────────────────
+async function updateStatusBar() {
+  try {
+    const d = await (await fetch('/api/status')).json();
+    document.getElementById('status-entries').textContent  = (d.total_entries||0).toLocaleString('de-DE') + ' Eintraege';
+    document.getElementById('status-dungeons').textContent = (d.dungeon_entries||0) + ' Runs';
+    document.getElementById('status-file').textContent     = d.log_file ? d.log_file.split(/[\\/]/).pop() : '--';
+    document.getElementById('status-time').textContent     = new Date(d.server_time).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('live-badge').style.opacity    = d.log_exists ? '1' : '0.4';
+  } catch(_) {}
+}
+setInterval(updateStatusBar, 10000);
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  loadIcons();
+  loadItemConfig().then(() => loadAllStats());
+  updateStatusBar();
+  startSSE();
+  setInterval(loadAllStats, 30000);
+  requestNotifPermission();
+});
+
+function startSSE() {
+  const es = new EventSource('/stream');
+  es.onmessage = function(e) {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'loot')     { addFeedEntry(msg);        loadAllStats(); }
+      if (msg.type === 'kopfgeld') { addKopfgeldFeedEntry(msg); loadAllStats(); }
+      if (msg.type === 'dungeon')  { addDungeonFeedEntry(msg);  loadAllStats(); }
+    } catch(_) {}
+  };
+  es.onerror = function() { setTimeout(startSSE, 3000); es.close(); };
+}
+</script>
+</body>
+</html>
