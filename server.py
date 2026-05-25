@@ -55,7 +55,7 @@ def api_icons_map_save():
 
 # ── Version & Update-API ──────────────────────────────────────────────────────
 
-GITHUB_VERSION_URL = "https://raw.githubusercontent.com/IMehmaTil/Loot-Tracker/main/latest_version.txt"
+GITHUB_VERSION_URL = "https://raw.githubusercontent.com/lMehmaTil/Loot-Tracker/main/latest_version.txt"
 
 @app.route("/api/version")
 def api_version():

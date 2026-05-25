@@ -15,7 +15,7 @@ from tkinter import ttk
 import requests
 
 # ── Konfiguration ──────────────────────────────────────────────────────────────
-GITHUB_API  = "https://api.github.com/repos/IMehmaTil/Loot-Tracker/releases/latest"
+GITHUB_API  = "https://api.github.com/repos/lMehmaTil/Loot-Tracker/releases/latest"
 VERSION_FILE = "version.txt"
 
 # Diese Einträge aus der ZIP werden aktualisiert, alles andere bleibt unberührt
